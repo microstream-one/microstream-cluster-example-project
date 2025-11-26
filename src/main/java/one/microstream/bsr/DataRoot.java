@@ -14,9 +14,9 @@ import one.microstream.bsr.domain.Publisher;
 public class DataRoot
 {
 	private final GigaMap<Book> books = GigaMap.<Book>Builder()
-		.withBitmapIdentityIndex(BookIndices.ID)
-		.withBitmapIndex(BookIndices.ISBN)
-		.withBitmapIndex(BookIndices.TITLE)
+//		.withBitmapIdentityIndex(BookIndices.ID)
+//		.withBitmapIndex(BookIndices.ISBN)
+//		.withBitmapIndex(BookIndices.TITLE)
 		.build();
 	private final List<Author> authors = new ArrayList<>();
 	private final List<Publisher> publishers = new ArrayList<>();

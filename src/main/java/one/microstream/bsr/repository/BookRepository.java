@@ -27,12 +27,14 @@ public class BookRepository extends ClusterLockScope
 
 	public Book getBookByISBN(final String isbn)
 	{
-		return this.read(() -> this.books.query(BookIndices.ISBN.is(isbn)).findFirst().orElse(null));
+		throw new RuntimeException();
+		//return this.read(() -> this.books.query(BookIndices.ISBN.is(isbn)).findFirst().orElse(null));
 	}
 
 	public Book getBookById(final long id)
 	{
-		return this.read(() -> this.books.query(BookIndices.ID.is(id)).findFirst().orElse(null));
+		return this.read(() -> this.books.get(id - 1));
+		//return this.read(() -> this.books.query(BookIndices.ID.is(id)).findFirst().orElse(null));
 	}
 
 	public List<Book> searchBooksByTitle(final String title)
@@ -50,7 +52,8 @@ public class BookRepository extends ClusterLockScope
 		final int offset = (page - 1) * pageSize;
 		final int limit = Math.max(pageSize, PAGE_SIZE_LIMIT);
 
-		return this.read(() -> this.books.query(BookIndices.TITLE.containsIgnoreCase(title)).toList(offset, limit));
+		throw new RuntimeException();
+		//return this.read(() -> this.books.query(BookIndices.TITLE.containsIgnoreCase(title)).toList(offset, limit));
 	}
 
 	public void insert(final Book book) throws IndexAlreadyExistsException
@@ -106,9 +109,10 @@ public class BookRepository extends ClusterLockScope
 
 	private void ensureUniqueIndex(final Book book) throws IndexAlreadyExistsException
 	{
-		if (this.books.query(BookIndices.ISBN.like(book)).findFirst().isPresent())
-		{
-			throw new IndexAlreadyExistsException("Book with isbn %s already exists.".formatted(book.getIsbn()));
-		}
+		throw new RuntimeException();
+//		if (this.books.query(BookIndices.ISBN.like(book)).findFirst().isPresent())
+//		{
+//			throw new IndexAlreadyExistsException("Book with isbn %s already exists.".formatted(book.getIsbn()));
+//		}
 	}
 }
