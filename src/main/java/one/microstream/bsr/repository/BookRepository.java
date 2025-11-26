@@ -109,7 +109,6 @@ public class BookRepository extends ClusterLockScope
 
 	private void ensureUniqueIndex(final Book book) throws IndexAlreadyExistsException
 	{
-		throw new RuntimeException();
 //		if (this.books.query(BookIndices.ISBN.like(book)).findFirst().isPresent())
 //		{
 //			throw new IndexAlreadyExistsException("Book with isbn %s already exists.".formatted(book.getIsbn()));
