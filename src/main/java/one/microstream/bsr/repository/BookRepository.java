@@ -2,6 +2,8 @@ package one.microstream.bsr.repository;
 
 import java.util.List;
 
+import javax.management.RuntimeErrorException;
+
 import org.eclipse.serializer.concurrency.LockedExecutor;
 import org.eclipse.store.storage.types.StorageManager;
 
@@ -34,7 +36,11 @@ public class BookRepository extends ClusterLockScope
 
 	public Book getBookById(final long id)
 	{
-		return this.read(() -> this.books.stream().filter(b -> b.getId() == id).findAny().orElse(null));
+		if (id > Integer.MAX_VALUE)
+		{
+			throw new RuntimeException("Index exceeded max int size");
+		}
+		return this.read(() -> this.books.get((int)id - 1));
 	}
 
 	public List<Book> searchBooksByTitle(final String title)
