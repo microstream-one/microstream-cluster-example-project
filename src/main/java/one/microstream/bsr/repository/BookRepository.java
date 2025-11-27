@@ -2,6 +2,8 @@ package one.microstream.bsr.repository;
 
 import java.util.List;
 
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterLockScope;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterStorageManager;
 import org.eclipse.serializer.concurrency.LockedExecutor;
 import org.eclipse.store.gigamap.types.GigaMap;
 
@@ -10,8 +12,6 @@ import one.microstream.bsr.DataRoot;
 import one.microstream.bsr.domain.Book;
 import one.microstream.bsr.domain.BookIndices;
 import one.microstream.bsr.exception.IndexAlreadyExistsException;
-import one.microstream.enterprise.cluster.nodelibrary.types.ClusterLockScope;
-import one.microstream.enterprise.cluster.nodelibrary.types.ClusterStorageManager;
 
 @Singleton
 public class BookRepository extends ClusterLockScope
@@ -27,14 +27,12 @@ public class BookRepository extends ClusterLockScope
 
 	public Book getBookByISBN(final String isbn)
 	{
-		throw new RuntimeException();
-		//return this.read(() -> this.books.query(BookIndices.ISBN.is(isbn)).findFirst().orElse(null));
+		return this.read(() -> this.books.query(BookIndices.ISBN.is(isbn)).findFirst().orElse(null));
 	}
 
 	public Book getBookById(final long id)
 	{
-		return this.read(() -> this.books.get(id - 1));
-		//return this.read(() -> this.books.query(BookIndices.ID.is(id)).findFirst().orElse(null));
+		return this.read(() -> this.books.query(BookIndices.ID.is(id)).findFirst().orElse(null));
 	}
 
 	public List<Book> searchBooksByTitle(final String title)
@@ -52,8 +50,7 @@ public class BookRepository extends ClusterLockScope
 		final int offset = (page - 1) * pageSize;
 		final int limit = Math.max(pageSize, PAGE_SIZE_LIMIT);
 
-		throw new RuntimeException();
-		//return this.read(() -> this.books.query(BookIndices.TITLE.containsIgnoreCase(title)).toList(offset, limit));
+		return this.read(() -> this.books.query(BookIndices.TITLE.containsIgnoreCase(title)).toList(offset, limit));
 	}
 
 	public void insert(final Book book) throws IndexAlreadyExistsException
@@ -109,9 +106,9 @@ public class BookRepository extends ClusterLockScope
 
 	private void ensureUniqueIndex(final Book book) throws IndexAlreadyExistsException
 	{
-//		if (this.books.query(BookIndices.ISBN.like(book)).findFirst().isPresent())
-//		{
-//			throw new IndexAlreadyExistsException("Book with isbn %s already exists.".formatted(book.getIsbn()));
-//		}
+		if (this.books.query(BookIndices.ISBN.like(book)).findFirst().isPresent())
+		{
+			throw new IndexAlreadyExistsException("Book with isbn %s already exists.".formatted(book.getIsbn()));
+		}
 	}
 }

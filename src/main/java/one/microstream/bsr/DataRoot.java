@@ -8,7 +8,6 @@ import org.eclipse.store.gigamap.types.GigaMap;
 
 import one.microstream.bsr.domain.Author;
 import one.microstream.bsr.domain.Book;
-import one.microstream.bsr.domain.BookIndices;
 import one.microstream.bsr.domain.Publisher;
 
 public class DataRoot

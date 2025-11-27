@@ -2,6 +2,8 @@ package one.microstream.bsr.repository;
 
 import java.util.List;
 
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterLockScope;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterStorageManager;
 import org.eclipse.serializer.concurrency.LockedExecutor;
 import org.eclipse.store.storage.types.StorageManager;
 
@@ -9,8 +11,6 @@ import jakarta.inject.Singleton;
 import one.microstream.bsr.DataRoot;
 import one.microstream.bsr.domain.Author;
 import one.microstream.bsr.exception.IndexAlreadyExistsException;
-import one.microstream.enterprise.cluster.nodelibrary.types.ClusterLockScope;
-import one.microstream.enterprise.cluster.nodelibrary.types.ClusterStorageManager;
 
 @Singleton
 public class AuthorRepository extends ClusterLockScope
