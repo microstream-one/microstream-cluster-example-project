@@ -2,8 +2,8 @@ package one.microstream.bsr.repository;
 
 import java.util.List;
 
-import javax.management.RuntimeErrorException;
-
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterLockScope;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterStorageManager;
 import org.eclipse.serializer.concurrency.LockedExecutor;
 import org.eclipse.store.storage.types.StorageManager;
 
@@ -12,8 +12,6 @@ import one.microstream.bsr.ChunkedList;
 import one.microstream.bsr.DataRoot;
 import one.microstream.bsr.domain.Book;
 import one.microstream.bsr.exception.IndexAlreadyExistsException;
-import one.microstream.enterprise.cluster.nodelibrary.types.ClusterLockScope;
-import one.microstream.enterprise.cluster.nodelibrary.types.ClusterStorageManager;
 
 @Singleton
 public class BookRepository extends ClusterLockScope

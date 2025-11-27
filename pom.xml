@@ -63,9 +63,9 @@
 	<dependencies>
 		<!-- MicroStream Nodelibrary -->
 		<dependency>
-			<groupId>one.microstream</groupId>
-			<artifactId>microstream-enterprise-cluster-nodelibrary-micronaut</artifactId>
-			<version>1.11.0-SNAPSHOT</version>
+			<groupId>org.eclipse.datagrid</groupId>
+			<artifactId>cluster-nodelibrary-micronaut</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
 		</dependency>
 		<!-- EclipseStore -->
 		<!-- <dependency>
