@@ -1,0 +1,639 @@
+{
+	"info": {
+		"_postman_id": "331a9701-b8e9-4337-8b6f-32e862e3ccaa",
+		"name": "Books-Rest-Server Example",
+		"description": "Endpoints for the [Books-Rest-Server Example Project](https://github.com/microstream-one/microstream-cluster-example-project)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "29203804"
+	},
+	"item": [
+		{
+			"name": "book",
+			"item": [
+				{
+					"name": "Count Books",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{urlPrefix}}/book/count",
+							"host": [
+								"{{urlPrefix}}"
+							],
+							"path": [
+								"book",
+								"count"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Search Books",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{urlPrefix}}/book/search?title=a&page&pageSize",
+							"host": [
+								"{{urlPrefix}}"
+							],
+							"path": [
+								"book",
+								"search"
+							],
+							"query": [
+								{
+									"key": "title",
+									"value": "a"
+								},
+								{
+									"key": "page",
+									"value": null
+								},
+								{
+									"key": "pageSize",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Book by ISBN",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{urlPrefix}}/book/{{bookIsbn}}",
+							"host": [
+								"{{urlPrefix}}"
+							],
+							"path": [
+								"book",
+								"{{bookIsbn}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Book by ID",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{urlPrefix}}/book/id/1",
+							"host": [
+								"{{urlPrefix}}"
+							],
+							"path": [
+								"book",
+								"id",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Insert Book",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": 0,\r\n    \"isbn\": \"{{$guid}}\",\r\n    \"title\": \"{{$randomWords}}\",\r\n    \"publicationDate\": \"1950-03-01\",\r\n    \"edition\": 1,\r\n    \"availableQuantity\": 10,\r\n    \"priceEuroCent\": 1000,\r\n    \"author\": 1,\r\n    \"publisher\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{urlPrefix}}/book",
+							"host": [
+								"{{urlPrefix}}"
+							],
+							"path": [
+								"book"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Clear Books",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{urlPrefix}}/book/clear",
+							"host": [
+								"{{urlPrefix}}"
+							],
+							"path": [
+								"book",
+								"clear"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "author",
+			"item": [
+				{
+					"name": "Count Authors",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{urlPrefix}}/author/count",
+							"host": [
+								"{{urlPrefix}}"
+							],
+							"path": [
+								"author",
+								"count"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Search Authors",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{urlPrefix}}/author/search?name=a&page&pageSize",
+							"host": [
+								"{{urlPrefix}}"
+							],
+							"path": [
+								"author",
+								"search"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "a"
+								},
+								{
+									"key": "page",
+									"value": null
+								},
+								{
+									"key": "pageSize",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Author By Email",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{urlPrefix}}/author/{{authorEmail}}",
+							"host": [
+								"{{urlPrefix}}"
+							],
+							"path": [
+								"author",
+								"{{authorEmail}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Author By ID",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{urlPrefix}}/author/id/1",
+							"host": [
+								"{{urlPrefix}}"
+							],
+							"path": [
+								"author",
+								"id",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Insert Author",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": 0,\r\n    \"email\": \"{{$randomEmail}}\",\r\n    \"firstname\": \"{{$randomFirstName}}\",\r\n    \"lastname\": \"{{$randomLastName}}\",\r\n    \"addresses\": [\r\n        {\r\n            \"address\": \"{{$randomStreetAddress}}\",\r\n            \"city\": \"{{$randomCity}}\",\r\n            \"country\": \"{{$randomCountry}}\",\r\n            \"address2\": null,\r\n            \"zip\": null\r\n        }\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{urlPrefix}}/author",
+							"host": [
+								"{{urlPrefix}}"
+							],
+							"path": [
+								"author"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Clear Authors",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{urlPrefix}}/author/clear",
+							"host": [
+								"{{urlPrefix}}"
+							],
+							"path": [
+								"author",
+								"clear"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "publisher",
+			"item": [
+				{
+					"name": "Count Publishers",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{urlPrefix}}/publisher/count",
+							"host": [
+								"{{urlPrefix}}"
+							],
+							"path": [
+								"publisher",
+								"count"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Search Publishers",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{urlPrefix}}/publisher/search?company=e&page&pageSize",
+							"host": [
+								"{{urlPrefix}}"
+							],
+							"path": [
+								"publisher",
+								"search"
+							],
+							"query": [
+								{
+									"key": "company",
+									"value": "e"
+								},
+								{
+									"key": "page",
+									"value": null
+								},
+								{
+									"key": "pageSize",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Publisher By Email",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{urlPrefix}}/publisher/{{publisherEmail}}",
+							"host": [
+								"{{urlPrefix}}"
+							],
+							"path": [
+								"publisher",
+								"{{publisherEmail}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Publisher By ID",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{urlPrefix}}/publisher/id/1",
+							"host": [
+								"{{urlPrefix}}"
+							],
+							"path": [
+								"publisher",
+								"id",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Insert Publisher",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": 0,\r\n    \"email\": \"{{$randomEmail}}\",\r\n    \"company\": \"{{$randomCompanyName}}\",\r\n    \"addresses\": [\r\n        {\r\n            \"address\": \"{{$randomStreetAddress}}\",\r\n            \"city\": \"{{$randomCity}}\",\r\n            \"country\": \"{{$randomCountry}}\",\r\n            \"address2\": null,\r\n            \"zip\": null\r\n        }\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{urlPrefix}}/publisher",
+							"host": [
+								"{{urlPrefix}}"
+							],
+							"path": [
+								"publisher"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Clear Publishers",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{urlPrefix}}/publisher/clear",
+							"host": [
+								"{{urlPrefix}}"
+							],
+							"path": [
+								"publisher",
+								"clear"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "authorId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "bookIsbn",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
