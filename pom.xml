@@ -36,16 +36,21 @@
         <repository>
             <id>microstream-maven-ee</id>
             <url>https://repo.microstream.one/repository/ms-ee/</url>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
         </repository>
         
-         <repository>
-            <id>ossrh-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        <repository>
+            <id>maven-snapshots</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
             <releases>
                 <enabled>false</enabled>
             </releases>
             <snapshots>
                 <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
             </snapshots>
         </repository>
 	</repositories>
