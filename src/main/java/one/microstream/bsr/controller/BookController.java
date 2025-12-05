@@ -24,7 +24,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import one.microstream.bsr.domain.Book;
 import one.microstream.bsr.dto.BookDto;
 import one.microstream.bsr.dto.BookReferenceDto;
-import one.microstream.bsr.exception.IndexAlreadyExistsException;
+import one.microstream.bsr.exception.IdAlreadyExistsException;
 import one.microstream.bsr.repository.AuthorRepository;
 import one.microstream.bsr.repository.BookRepository;
 import one.microstream.bsr.repository.PublisherRepository;
@@ -48,8 +48,8 @@ public class BookController
 		this.publishers = publishers;
 	}
 
-	@Error(exception = IndexAlreadyExistsException.class, status = HttpStatus.BAD_REQUEST)
-	public String handleIndexAlreadyExistsException(final IndexAlreadyExistsException e)
+	@Error(exception = IdAlreadyExistsException.class, status = HttpStatus.BAD_REQUEST)
+	public String handleIndexAlreadyExistsException(final IdAlreadyExistsException e)
 	{
 		return e.getMessage();
 	}

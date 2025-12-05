@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
@@ -22,75 +21,84 @@
 		<release.version>21</release.version>
 		<micronaut.version>4.8.3</micronaut.version>
 		<eclipsestore.version>4.0.0-SNAPSHOT</eclipsestore.version>
+		<lucene.version>10.3.2</lucene.version>
 		<micronaut.aot.enabled>false</micronaut.aot.enabled>
 		<micronaut.runtime>netty</micronaut.runtime>
 		<exec.mainClass>one.microstream.bsr.Application</exec.mainClass>
 	</properties>
 
 	<repositories>
-        <repository>
-            <id>central</id>
-            <url>https://repo.maven.apache.org/maven2</url>
-        </repository>
-        
-        <repository>
-            <id>microstream-maven-ee</id>
-            <url>https://repo.microstream.one/repository/ms-ee/</url>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-            </snapshots>
-        </repository>
-        
-        <repository>
-            <id>maven-snapshots</id>
-            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-            </snapshots>
-        </repository>
+		<repository>
+			<id>central</id>
+			<url>https://repo.maven.apache.org/maven2</url>
+		</repository>
+		<repository>
+			<id>microstream-maven-ee</id>
+			<url>https://repo.microstream.one/repository/ms-ee/</url>
+		</repository>
 	</repositories>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-bom</artifactId>
-                <version>2.24.1</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-bom</artifactId>
+				<version>2.24.1</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<dependencies>
-      <dependency>
-        <groupId>org.eclipse.store</groupId>
-        <artifactId>storage-embedded</artifactId>
-        <version>${eclipsestore.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.serializer</groupId>
-        <artifactId>persistence-binary</artifactId>
-        <version>${eclipsestore.version}</version>
-      </dependency>
-      
-		<!-- MicroStream Nodelibrary -->
+		<dependency>
+			<groupId>org.eclipse.store</groupId>
+			<artifactId>storage-embedded</artifactId>
+			<version>${eclipsestore.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.serializer</groupId>
+			<artifactId>persistence-binary</artifactId>
+			<version>${eclipsestore.version}</version>
+		</dependency>
+
+		<!-- GigaMap -->
+		<dependency>
+			<groupId>org.eclipse.store</groupId>
+			<artifactId>gigamap</artifactId>
+			<version>${eclipsestore.version}</version>
+		</dependency>
+
+		<!-- Lucene -->
+		<dependency>
+			<groupId>org.eclipse.store</groupId>
+			<artifactId>gigamap-lucene</artifactId>
+			<version>3.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-core</artifactId>
+			<version>${lucene.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-queryparser</artifactId>
+			<version>${lucene.version}</version>
+		</dependency>
+
+		<!-- Nodelibrary -->
 		<dependency>
 			<groupId>org.eclipse.datagrid</groupId>
 			<artifactId>cluster-nodelibrary-micronaut</artifactId>
-			<version>1.17.1</version>
+			<version>1.17.2</version>
 		</dependency>
+
 		<!-- Logging -->
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j2-impl</artifactId>
-            <scope>runtime</scope>
-        </dependency>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-slf4j2-impl</artifactId>
+			<scope>runtime</scope>
+		</dependency>
 
 		<!-- Micronaut -->
 		<dependency>
@@ -139,24 +147,6 @@
 			<artifactId>junit-jupiter-engine</artifactId>
 			<scope>test</scope>
 		</dependency>
-
-		<!-- Micronaut Micrometer for Exporting Prometheus Stats -->
-		<dependency>
-			<groupId>io.micronaut.micrometer</groupId>
-			<artifactId>micronaut-micrometer-core</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.micronaut.micrometer</groupId>
-			<artifactId>micronaut-micrometer-observation</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.micronaut.micrometer</groupId>
-			<artifactId>micronaut-micrometer-observation-http</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.micronaut.micrometer</groupId>
-			<artifactId>micronaut-micrometer-registry-prometheus</artifactId>
-		</dependency>
 	</dependencies>
 
 	<build>
@@ -173,8 +163,7 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
-					<annotationProcessorPaths
-						combine.children="append">
+					<annotationProcessorPaths combine.children="append">
 						<path>
 							<groupId>io.micronaut</groupId>
 							<artifactId>micronaut-http-validation</artifactId>

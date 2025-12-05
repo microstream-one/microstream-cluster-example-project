@@ -1,0 +1,1 @@
+For eclipse store reflection to work with Java records `--add-exports java.base/jdk.internal.misc=org.eclipse.serializer.base` has to be added at runtime.

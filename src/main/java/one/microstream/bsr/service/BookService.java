@@ -1,40 +1,29 @@
-package one.microstream.bsr.repository;
+package one.microstream.bsr.service;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.WildcardQuery;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterLockScope;
-import org.eclipse.serializer.concurrency.LockedExecutor;
-import org.eclipse.store.gigamap.lucene.LuceneIndex;
-import org.eclipse.store.gigamap.types.GigaMap;
+import org.eclipse.serializer.util.iterables.ChainedIterables;
 
-import io.micronaut.eclipsestore.RootProvider;
 import jakarta.inject.Singleton;
 import one.microstream.bsr.domain.Book;
-import one.microstream.bsr.domain.DataRoot;
+import one.microstream.bsr.dto.InsertBookDto;
 import one.microstream.bsr.gigamap.GigaMapBookIndices;
 import one.microstream.bsr.lucene.BookDocumentPopulator;
+import one.microstream.bsr.repository.BookRepository;
 
 @Singleton
-public class BookRepository extends ClusterLockScope
+public final class BookService
 {
-    private static final int DEFAULT_PAGE_SIZE = 512;
+    private final BookRepository repo;
 
-    private final GigaMap<Book> books;
-    private final LuceneIndex<Book> luceneIndex;
-
-    public BookRepository(
-        final LockedExecutor executor,
-        final RootProvider<DataRoot> rootProvider,
-        final LuceneIndex<Book> luceneIndex
-    )
+    public BookService(final BookRepository repo)
     {
-        super(executor);
-        this.books = rootProvider.root().books();
-        this.luceneIndex = luceneIndex;
+        this.repo = repo;
     }
 
     public Optional<Book> getById(final UUID id)
@@ -69,13 +58,34 @@ public class BookRepository extends ClusterLockScope
         });
     }
 
-    public void insertAll(final Iterable<Book> books)
-    {
-        this.write(() ->
+    public void insertAll(final Iterable<InsertBookDto> books)
+    {ChainedIterables<T>
+        final var bookConverterIterable = new Iterable<Book>()
         {
-            this.books.addAll(books);
-            this.books.store();
-        });
+            @Override
+            public Iterator<Book> iterator()
+            {
+                final Iterator<InsertBookDto> booksIterator = books.iterator();
+
+                return new Iterator<Book>()
+                {
+                    @Override
+                    public boolean hasNext()
+                    {
+                        return booksIterator.hasNext();
+                    }
+
+                    @Override
+                    public Book next()
+                    {
+                        // TODO Auto-generated method stub
+                        return null;
+                    }
+                };
+            }
+        };
+
+        this.repo.insertAll(bookConverterIterable);
     }
 
     /**
@@ -88,27 +98,11 @@ public class BookRepository extends ClusterLockScope
      */
     public boolean update(final Book book)
     {
-        return this.write(() ->
-        {
-            final Book storedBook = this.getById(book.id()).orElse(null);
-            final boolean exists = storedBook != null;
-            if (exists)
-            {
-                this.books.replace(storedBook, book);
-            }
-            return exists;
-        });
+        return this.repo.update(book);
     }
 
-    /**
-     * Removes the book in the storage that matches the specified books id.
-     * 
-     * @param book the book to remove (checks for matching id)
-     * @return <code>true</code> if the book has been removed from the storage
-     */
-    public boolean delete(final Book book)
+    public boolean delete(final UUID id)
     {
-        final long removedId = this.write(() -> this.books.remove(book));
-        return removedId != -1;
+        return this.repo.delete(new Book(id, null, null, null, 0, null, null, null));
     }
 }
