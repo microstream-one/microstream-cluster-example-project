@@ -21,7 +21,7 @@ public record Book(
     String title,
     String description,
     int pages,
-    Set<Genre> genres,
+    Set<String> genres,
     LocalDate publicationDate,
     Author author
 )

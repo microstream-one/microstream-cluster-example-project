@@ -2,6 +2,7 @@ package one.microstream.bsr.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.apache.lucene.index.Term;
@@ -17,6 +18,7 @@ import one.microstream.bsr.domain.Book;
 import one.microstream.bsr.domain.DataRoot;
 import one.microstream.bsr.gigamap.GigaMapBookIndices;
 import one.microstream.bsr.lucene.BookDocumentPopulator;
+import one.microstream.bsr.util.BooleanRef;
 
 @Singleton
 public class BookRepository extends ClusterLockScope
@@ -39,10 +41,6 @@ public class BookRepository extends ClusterLockScope
 
     public Optional<Book> getById(final UUID id)
     {
-        if (id == null)
-        {
-            throw new IllegalArgumentException("id is null");
-        }
         return this.read(() -> this.books.query(GigaMapBookIndices.ID.is(id)).findFirst());
     }
 
@@ -58,6 +56,20 @@ public class BookRepository extends ClusterLockScope
     {
         final var query = new WildcardQuery(new Term(BookDocumentPopulator.TITLE_FIELD, titleWildcardSearch));
         return this.read(() -> this.luceneIndex.query(query, DEFAULT_PAGE_SIZE));
+    }
+
+    public List<Book> searchByGenre(final Set<String> genres)
+    {
+        // TODO replace with lucene search TermInSetQuery
+        return this.read(() ->
+        {
+            try (final var storedBooks = this.books.query().stream())
+            {
+                return storedBooks.limit(DEFAULT_PAGE_SIZE)
+                    .filter(b -> b.genres().containsAll(genres))
+                    .toList();
+            }
+        });
     }
 
     public void insert(final Book book)
@@ -91,12 +103,12 @@ public class BookRepository extends ClusterLockScope
         return this.write(() ->
         {
             final Book storedBook = this.getById(book.id()).orElse(null);
-            final boolean exists = storedBook != null;
-            if (exists)
+            if (storedBook != null)
             {
                 this.books.replace(storedBook, book);
+                return true;
             }
-            return exists;
+            return false;
         });
     }
 
@@ -110,5 +122,22 @@ public class BookRepository extends ClusterLockScope
     {
         final long removedId = this.write(() -> this.books.remove(book));
         return removedId != -1;
+    }
+
+    public boolean deleteAll(final Iterable<Book> books)
+    {
+        final var removed = new BooleanRef();
+        this.write(() ->
+        {
+            for (final var book : books)
+            {
+                final long removedId = this.books.remove(book);
+                if (removedId != -1)
+                {
+                    removed.set(true);
+                }
+            }
+        });
+        return removed.get();
     }
 }

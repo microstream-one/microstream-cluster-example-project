@@ -13,14 +13,13 @@ public final class DataRoot
 {
     private final GigaMap<Author> authors = GigaMap.<Author>Builder()
         .withBitmapIdentityIndex(GigaMapAuthorIndices.ID)
-        .withBitmapIndex(GigaMapAuthorIndices.NAME)
         .build();
     private final GigaMap<Book> books = GigaMap.<Book>Builder()
         .withBitmapIdentityIndex(GigaMapBookIndices.ID)
         .withBitmapIndex(GigaMapBookIndices.ISBN)
         .withBitmapIndex(GigaMapBookIndices.PUBLICATION)
         .build();
-    private final Set<Genre> genres = new HashSet<>();
+    private final Set<String> genres = new HashSet<>();
 
     public DataRoot()
     {
@@ -37,7 +36,7 @@ public final class DataRoot
         return this.books;
     }
 
-    public Set<Genre> genres()
+    public Set<String> genres()
     {
         return this.genres;
     }

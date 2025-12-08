@@ -1,140 +1,95 @@
 package one.microstream.bsr.controller;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
-import io.micrometer.observation.annotation.Observed;
+import org.apache.commons.lang3.stream.Streams;
+
 import io.micronaut.core.annotation.NonNull;
-import io.micronaut.core.annotation.Nullable;
-import io.micronaut.http.HttpStatus;
+import io.micronaut.core.convert.format.Format;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
-import io.micronaut.http.annotation.Error;
+import io.micronaut.http.annotation.Delete;
 import io.micronaut.http.annotation.Get;
-import io.micronaut.http.annotation.PathVariable;
-import io.micronaut.http.annotation.Post;
+import io.micronaut.http.annotation.Patch;
 import io.micronaut.http.annotation.Put;
 import io.micronaut.http.annotation.QueryValue;
-import io.micronaut.http.exceptions.HttpStatusException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
-import one.microstream.bsr.domain.Book;
 import one.microstream.bsr.dto.BookDto;
-import one.microstream.bsr.dto.BookReferenceDto;
-import one.microstream.bsr.exception.IdAlreadyExistsException;
-import one.microstream.bsr.repository.AuthorRepository;
-import one.microstream.bsr.repository.BookRepository;
-import one.microstream.bsr.repository.PublisherRepository;
+import one.microstream.bsr.dto.InsertBookDto;
+import one.microstream.bsr.exception.InvalidAuthorIdException;
+import one.microstream.bsr.exception.InvalidGenreException;
+import one.microstream.bsr.service.BookService;
 
-@Observed
 @Controller("/book")
 public class BookController
 {
-	private final BookRepository books;
-	private final AuthorRepository authors;
-	private final PublisherRepository publishers;
+    private final BookService books;
 
-	public BookController(
-		final BookRepository books,
-		final AuthorRepository authors,
-		final PublisherRepository publishers
-	)
-	{
-		this.books = books;
-		this.authors = authors;
-		this.publishers = publishers;
-	}
+    public BookController(final BookService books)
+    {
+        this.books = books;
+    }
 
-	@Error(exception = IdAlreadyExistsException.class, status = HttpStatus.BAD_REQUEST)
-	public String handleIndexAlreadyExistsException(final IdAlreadyExistsException e)
-	{
-		return e.getMessage();
-	}
+    @Put
+    public void put(@NonNull @Valid @Body final InsertBookDto book) throws InvalidAuthorIdException
+    {
+        this.books.insert(book);
+    }
 
-	@Get("/count")
-	public long getCount()
-	{
-		return this.books.countBooks();
-	}
+    @Put("/batch")
+    public void putBatch(@NonNull @NotEmpty @Body final List<@NonNull @Valid InsertBookDto> books)
+        throws InvalidAuthorIdException
+    {
+        this.books.insertAll(books);
+    }
 
-	@Get("/search")
-	public List<BookDto> searchBook(
-		@QueryValue("title") @NonNull @NotBlank final String title,
-		@QueryValue("page") @Nullable @PositiveOrZero final Integer page,
-		@QueryValue("pageSize") @Nullable @PositiveOrZero final Integer pageSize
-	)
-	{
-		final List<Book> searchedBooks;
-		if (pageSize == null && page == null)
-		{
-			searchedBooks = this.books.searchBooksByTitle(title);
-		}
-		else if (pageSize == null)
-		{
-			searchedBooks = this.books.searchBooksByTitle(title, page);
-		}
-		else
-		{
-			searchedBooks = this.books.searchBooksByTitle(title, page, pageSize);
-		}
-		return searchedBooks.stream().map(BookDto::new).toList();
-	}
+    @Patch
+    public void patch(@NonNull @Valid @Body final BookDto book)
+    {
+        this.books.update(book);
+    }
 
-	@Get("/{isbn}")
-	public BookDto getBookByIsbn(@NonNull @NotBlank @PathVariable final String isbn)
-	{
-		return Optional.ofNullable(this.books.getBookByISBN(isbn)).map(BookDto::new).orElse(null);
-	}
+    @Delete
+    public void delete(@NonNull @Valid @Body final BookDto book)
+    {
+        this.books.delete(book);
+    }
 
-	@Get("/id/{id}")
-	public BookDto getBookById(@NonNull @PathVariable @Positive final Long id)
-	{
-		return Optional.ofNullable(this.books.getBookById(id)).map(BookDto::new).orElse(null);
-	}
+    @Delete("/batch")
+    public void deleteBatch(@NonNull @NotEmpty @Body final List<@NonNull @Valid BookDto> books)
+        throws InvalidAuthorIdException
+    {
+        this.books.deleteAll(books);
+    }
 
-	@Put
-	public void putBook(@Body @Valid @NonNull final BookReferenceDto dto)
-	{
-		this.books.insert(this.convertDtoToBook(dto));
-	}
+    @Get("/author")
+    public List<BookDto> getAuthor(@NonNull @Body final UUID authorId) throws InvalidAuthorIdException
+    {
+        return this.books.searchByAuthor(authorId);
+    }
 
-	@Put("/batch")
-	public void putBookBatch(@NotEmpty @Body @NonNull final List<@Valid @NonNull BookReferenceDto> dto)
-	{
-		try
-		{
-			this.books.insertAll(dto.stream().map(this::convertDtoToBook).toList());
-		}
-		catch (final IllegalArgumentException e)
-		{
-			throw new HttpStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-		}
-	}
+    @Get("/title")
+    public List<BookDto> getTitle(@NonNull @NotBlank @QueryValue final String titleSearch)
+    {
+        return this.books.searchByTitle(titleSearch);
+    }
 
-	private Book convertDtoToBook(final BookReferenceDto dto) throws HttpStatusException
-	{
-		final var book = new Book(dto);
-		final var author = this.authors.getAuthorById(dto.author());
-		if (author == null)
-		{
-			throw new HttpStatusException(HttpStatus.NOT_FOUND, "Could not find author with id " + dto.author());
-		}
-		final var publisher = this.publishers.getPublisherById(dto.publisher());
-		if (publisher == null)
-		{
-			throw new HttpStatusException(HttpStatus.NOT_FOUND, "Could not find publisher with id " + dto.publisher());
-		}
-		book.setAuthor(author);
-		book.setPublisher(publisher);
-		return book;
-	}
+    @Get("/genre")
+    public List<BookDto> getGenre(@NonNull @NotEmpty @Format("csv") @QueryValue final Iterable<String> genres)
+        throws InvalidGenreException
+    {
+        final Set<String> genresSet = Streams.of(genres).collect(Collectors.toUnmodifiableSet());
+        return this.books.searchByGenre(genresSet);
+    }
 
-	@Post("/clear")
-	public void clearBooks()
-	{
-		this.books.clearBooks();
-	}
+    @Get("/isbn")
+    public List<BookDto> getIsbn(@NonNull @NotBlank @QueryValue final String isbn)
+    {
+        return this.books.getByISBN(isbn);
+    }
 }

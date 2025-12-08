@@ -17,7 +17,7 @@ public class IterableConverter<I, O> implements Iterable<O>
     @Override
     public Iterator<O> iterator()
     {
-        return new <O>IterableConverterIterator(this.in.iterator(), this.converter);
+        return new IterableConverterIterator<>(this.in.iterator(), this.converter);
     }
 
     public static class IterableConverterIterator<I, O> implements Iterator<O>
@@ -40,7 +40,7 @@ public class IterableConverter<I, O> implements Iterable<O>
         @Override
         public O next()
         {
-            return this.converter.apply(this.inIter.next());
+            return this.converter.apply(this.in.next());
         }
     }
 }

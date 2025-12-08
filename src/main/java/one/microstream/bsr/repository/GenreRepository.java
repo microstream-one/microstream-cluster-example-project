@@ -1,5 +1,6 @@
 package one.microstream.bsr.repository;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
@@ -12,12 +13,11 @@ import org.eclipse.store.storage.types.StorageManager;
 import io.micronaut.eclipsestore.RootProvider;
 import jakarta.inject.Singleton;
 import one.microstream.bsr.domain.DataRoot;
-import one.microstream.bsr.domain.Genre;
 
 @Singleton
 public class GenreRepository extends ClusterLockScope
 {
-    private final Set<Genre> genres;
+    private final Set<String> genres;
     private final StorageManager storageManager;
 
     public GenreRepository(
@@ -36,7 +36,7 @@ public class GenreRepository extends ClusterLockScope
      * 
      * @return an unmodifiable {@link Set} containing all genres
      */
-    public Set<Genre> list()
+    public Set<String> list()
     {
         return Collections.unmodifiableSet(this.read(() -> this.genres));
     }
@@ -46,11 +46,9 @@ public class GenreRepository extends ClusterLockScope
      * 
      * @param genre the genre to insert
      * @return <code>true</code> if the genre did not already exist in the storage
-     * @throws NullPointerException if genre is <code>null</code>
      */
-    public boolean insert(final Genre genre) throws NullPointerException
+    public boolean insert(final String genre) throws NullPointerException
     {
-        Objects.requireNonNull(genre, "genre is null");
         return this.write(() -> this.genres.add(genre));
     }
 
@@ -60,12 +58,11 @@ public class GenreRepository extends ClusterLockScope
      * 
      * @param genres the genres to insert
      * @return <code>true</code> if any genre did not already exist in the storage
-     * @throws NullPointerException if genres is <code>null</code>
      */
-    public boolean insertAll(final Set<Genre> genres) throws NullPointerException
+    public boolean insertAll(final Collection<String> genres) throws NullPointerException
     {
-        Objects.requireNonNull(genres, "genres is null");
-        final Set<Genre> nonNullGenres = genres.stream()
+        // the Set might allow null-values, so we filter
+        final Set<String> nonNullGenres = genres.stream()
             .filter(Objects::nonNull)
             .collect(Collectors.toUnmodifiableSet());
         return this.write(() ->
@@ -81,11 +78,30 @@ public class GenreRepository extends ClusterLockScope
      * 
      * @param genre the genre to delete
      * @return <code>true</code> if the storage contained the genre
-     * @throws NullPointerException if genre is <code>null</code>
      */
-    public boolean delete(final Genre genre) throws NullPointerException
+    public boolean delete(final String genre) throws NullPointerException
     {
-        Objects.requireNonNull(genre, "genre is null");
-        return this.write(() -> this.genres.remove(genre));
+        return this.write(() ->
+        {
+            final boolean removed = this.genres.remove(genre);
+            if (removed)
+            {
+                this.storageManager.store(this.genres);
+            }
+            return removed;
+        });
+    }
+
+    public boolean deleteAll(final Collection<String> genres)
+    {
+        return this.write(() ->
+        {
+            final boolean removed = this.genres.removeAll(genres);
+            if (removed)
+            {
+                this.storageManager.store(this.genres);
+            }
+            return removed;
+        });
     }
 }

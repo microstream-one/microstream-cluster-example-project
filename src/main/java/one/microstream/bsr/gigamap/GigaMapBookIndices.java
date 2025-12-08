@@ -52,7 +52,7 @@ public final class GigaMapBookIndices
 
         protected java.time.LocalDate getLocalDate(final Book entity)
         {
-            return entity.publication().value();
+            return entity.publicationDate();
         }
     };
 

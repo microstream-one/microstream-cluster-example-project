@@ -1,108 +1,179 @@
 package one.microstream.bsr.service;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
-import org.apache.lucene.index.Term;
+import org.apache.commons.lang3.stream.Streams;
 import org.apache.lucene.search.WildcardQuery;
-import org.eclipse.serializer.util.iterables.ChainedIterables;
 
+import io.micronaut.core.annotation.NonNull;
 import jakarta.inject.Singleton;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import one.microstream.bsr.domain.Author;
 import one.microstream.bsr.domain.Book;
+import one.microstream.bsr.dto.BookDto;
 import one.microstream.bsr.dto.InsertBookDto;
-import one.microstream.bsr.gigamap.GigaMapBookIndices;
-import one.microstream.bsr.lucene.BookDocumentPopulator;
+import one.microstream.bsr.exception.InvalidAuthorIdException;
+import one.microstream.bsr.exception.InvalidBookException;
+import one.microstream.bsr.exception.InvalidGenreException;
+import one.microstream.bsr.repository.AuthorRepository;
 import one.microstream.bsr.repository.BookRepository;
+import one.microstream.bsr.repository.GenreRepository;
 
 @Singleton
-public final class BookService
+public class BookService
 {
-    private final BookRepository repo;
+    private final BookRepository books;
+    private final AuthorRepository authors;
+    private final GenreRepository genres;
 
-    public BookService(final BookRepository repo)
+    public BookService(final BookRepository books, final AuthorRepository authors, final GenreRepository genres)
     {
-        this.repo = repo;
+        this.books = books;
+        this.authors = authors;
+        this.genres = genres;
     }
 
-    public Optional<Book> getById(final UUID id)
+    public Optional<BookDto> getById(final UUID id)
     {
-        if (id == null)
-        {
-            throw new IllegalArgumentException("id is null");
-        }
-        return this.read(() -> this.books.query(GigaMapBookIndices.ID.is(id)).findFirst());
+        return this.books.getById(id).map(BookDto::from);
     }
 
-    public Optional<Book> getByISBN(final String isbn)
+    public Optional<BookDto> getByISBN(final String isbn)
     {
-        return this.read(() -> this.books.query(GigaMapBookIndices.ISBN.is(isbn)).findFirst());
+        return this.books.getByISBN(isbn).map(BookDto::from);
     }
 
     /**
      * Searches books by title using a {@link WildcardQuery}
      */
-    public List<Book> searchByTitle(final String titleWildcardSearch)
+    public List<BookDto> searchByTitle(final String titleWildcardSearch)
     {
-        final var query = new WildcardQuery(new Term(BookDocumentPopulator.TITLE_FIELD, titleWildcardSearch));
-        return this.read(() -> this.luceneIndex.query(query, DEFAULT_PAGE_SIZE));
+        return this.books.searchByTitle(titleWildcardSearch).stream().map(BookDto::from).toList();
     }
 
-    public void insert(final Book book)
+    public List<BookDto> searchByAuthor(final UUID authorId) throws InvalidAuthorIdException
     {
-        this.write(() ->
-        {
-            this.books.add(book);
-            this.books.store();
-        });
+        final Author author = this.authors.getById(authorId).orElseThrow(() -> new InvalidAuthorIdException(authorId));
+        return author.books().stream().map(BookDto::from).toList();
     }
 
-    public void insertAll(final Iterable<InsertBookDto> books)
-    {ChainedIterables<T>
-        final var bookConverterIterable = new Iterable<Book>()
-        {
-            @Override
-            public Iterator<Book> iterator()
-            {
-                final Iterator<InsertBookDto> booksIterator = books.iterator();
-
-                return new Iterator<Book>()
-                {
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return booksIterator.hasNext();
-                    }
-
-                    @Override
-                    public Book next()
-                    {
-                        // TODO Auto-generated method stub
-                        return null;
-                    }
-                };
-            }
-        };
-
-        this.repo.insertAll(bookConverterIterable);
+    public List<BookDto> searchByGenre(final Set<String> genres) throws InvalidGenreException
+    {
+        return this.books.searchByGenre(genres).stream().map(BookDto::from).toList();
     }
 
     /**
-     * Updates all the fields of the book in the storage with the specified book
-     * matching the id.
      * 
-     * @param book the book containing all the updated fields and the same id as the
-     *             book in the storage to update
-     * @return <code>true</code> if the book was found and updated
+     * @param book
+     * @throws InvalidAuthorIdException if book contained an invalid author id
      */
-    public boolean update(final Book book)
+    public void insert(final InsertBookDto book) throws InvalidAuthorIdException
     {
-        return this.repo.update(book);
+        this.books.insert(this.createNewBook(book));
     }
 
-    public boolean delete(final UUID id)
+    /**
+     * 
+     * @param books
+     * @throws InvalidAuthorIdException if a book contained an invalid author id
+     */
+    public void insertAll(final Iterable<InsertBookDto> books) throws InvalidAuthorIdException
     {
-        return this.repo.delete(new Book(id, null, null, null, 0, null, null, null));
+        final List<Book> convertedBooks = Streams.of(books).map(this::createNewBook).toList();
+        this.books.insertAll(convertedBooks);
+    }
+
+    public boolean update(final BookDto book)
+    {
+        return this.books.update(this.ensureExistingBook(book));
+    }
+
+    public boolean delete(final BookDto book)
+    {
+        return this.books.delete(this.toBook(book));
+    }
+
+    public boolean deleteAll(@NonNull @NotEmpty final List<@NonNull @Valid BookDto> books)
+    {
+        final List<Book> convertedBooks = Streams.of(books).map(this::lookupBook).toList();
+        return this.books.deleteAll(convertedBooks);
+    }
+
+    private Book createNewBook(final InsertBookDto dto) throws InvalidAuthorIdException
+    {
+        final var author = this.authors.getById(dto.authorId())
+            .orElseThrow(() -> new InvalidAuthorIdException(dto.authorId()));
+        final var genres = this.ensureExistingGenres(dto.genres());
+        final var id = UUID.randomUUID();
+        return new Book(
+            id,
+            dto.isbn(),
+            dto.title(),
+            dto.description(),
+            dto.pages(),
+            genres,
+            dto.publicationDate(),
+            author
+        );
+    }
+
+    private Book ensureExistingBook(final BookDto dto) throws InvalidAuthorIdException
+    {
+        if (this.getById(dto.id()).isEmpty())
+        {
+            throw new InvalidBookException(dto.id());
+        }
+        final var author = this.authors.getById(dto.authorId())
+            .orElseThrow(() -> new InvalidAuthorIdException(dto.authorId()));
+        final var genres = this.ensureExistingGenres(dto.genres());
+        return new Book(
+            dto.id(),
+            dto.isbn(),
+            dto.title(),
+            dto.description(),
+            dto.pages(),
+            genres,
+            dto.publicationDate(),
+            author
+        );
+    }
+
+    private Author ensureExistingAuthor(final UUID authorId)
+    {
+        return this.authors.getById(authorId).orElseThrow(() -> new InvalidAuthorIdException(authorId));
+    }
+
+    private Book ensure(final BookDto dto) throws InvalidAuthorIdException
+    {
+        final var author = this.authors.getById(dto.authorId())
+            .orElseThrow(() -> new InvalidAuthorIdException(dto.authorId()));
+        final var genres = this.ensureExistingGenres(dto.genres());
+        return new Book(
+            UUID.randomUUID(),
+            dto.isbn(),
+            dto.title(),
+            dto.description(),
+            dto.pages(),
+            genres,
+            dto.publicationDate(),
+            author
+        );
+    }
+
+    private Set<String> ensureExistingGenres(final Set<String> genres) throws InvalidGenreException
+    {
+        final var storedGenres = this.genres.list();
+        for (final var genre : genres)
+        {
+            if (!storedGenres.contains(genre))
+            {
+                throw new InvalidGenreException("Could not find genre '%s'".formatted(genre));
+            }
+        }
+        return genres;
     }
 }
