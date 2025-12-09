@@ -20,7 +20,7 @@
 		<jdk.version>21</jdk.version>
 		<release.version>21</release.version>
 		<micronaut.version>4.8.3</micronaut.version>
-		<eclipsestore.version>4.0.0-SNAPSHOT</eclipsestore.version>
+		<eclipsestore.version>3.1.0</eclipsestore.version>
 		<lucene.version>10.3.2</lucene.version>
 		<micronaut.aot.enabled>false</micronaut.aot.enabled>
 		<micronaut.runtime>netty</micronaut.runtime>
