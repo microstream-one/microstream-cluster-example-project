@@ -1,5 +1,6 @@
 package one.microstream.bsr.controller;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -13,77 +14,73 @@ import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Delete;
 import io.micronaut.http.annotation.Get;
-import io.micronaut.http.annotation.Patch;
+import io.micronaut.http.annotation.PathVariable;
+import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Put;
 import io.micronaut.http.annotation.QueryValue;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import one.microstream.bsr.dto.BookDto;
-import one.microstream.bsr.dto.InsertBookDto;
-import one.microstream.bsr.dto.SearchByAuthorBookDto;
-import one.microstream.bsr.dto.SearchByGenreBookDto;
-import one.microstream.bsr.dto.SearchByTitleBookDto;
+import one.microstream.bsr.dto.GetBookById;
+import one.microstream.bsr.dto.InsertBook;
+import one.microstream.bsr.dto.SearchBookByAuthor;
+import one.microstream.bsr.dto.SearchBookByGenre;
+import one.microstream.bsr.dto.SearchBookByTitle;
+import one.microstream.bsr.dto.UpdateBook;
 import one.microstream.bsr.exception.InvalidAuthorIdException;
 import one.microstream.bsr.exception.InvalidGenreException;
-import one.microstream.bsr.service.BookService;
+import one.microstream.bsr.repository.BookRepository;
 
 @Controller("/book")
 public class BookController
 {
-    private final BookService books;
+    private final BookRepository books;
 
-    public BookController(final BookService books)
+    public BookController(final BookRepository books)
     {
         this.books = books;
     }
 
-    @Put
-    public void put(@NonNull @Valid @Body final InsertBookDto book) throws InvalidAuthorIdException
-    {
-        this.books.insert(book);
-    }
-
-    @Put("/batch")
-    public void putBatch(@NonNull @NotEmpty @Body final List<@NonNull @Valid InsertBookDto> books)
+    @Post
+    public void insert(@NonNull @NotEmpty @Body final List<@NonNull @Valid InsertBook> insert)
         throws InvalidAuthorIdException
     {
-        this.books.insertAll(books);
+        this.books.insert(insert);
     }
 
-    @Patch
-    public void patch(@NonNull @Valid @Body final BookDto book)
+    @Put("/{id}")
+    public void update(@NonNull @PathVariable final UUID id, @NonNull @Valid @Body final UpdateBook update)
     {
-        this.books.update(book);
+        this.books.update(id, update);
     }
 
-    @Delete
-    public void delete(@NonNull @Body final UUID bookId)
+    @Delete("/{id}")
+    public void delete(@NonNull @PathVariable final UUID id)
     {
-        this.books.delete(bookId);
+        this.books.delete(Arrays.asList(id));
     }
 
     @Delete("/batch")
-    public void deleteBatch(@NonNull @NotEmpty @Body final List<@NonNull UUID> bookIds)
+    public void deleteBatch(@NonNull @NotEmpty @Body final List<@NonNull UUID> ids)
         throws InvalidAuthorIdException
     {
-        this.books.deleteAll(bookIds);
+        this.books.delete(ids);
     }
 
-    @Get("/author")
-    public List<SearchByAuthorBookDto> getAuthor(@NonNull @Body final UUID authorId) throws InvalidAuthorIdException
+    @Get("/author/{id}")
+    public List<SearchBookByAuthor> searchByAuthor(@NonNull @PathVariable final UUID id) throws InvalidAuthorIdException
     {
-        return this.books.searchByAuthor(authorId);
+        return this.books.searchByAuthor(id);
     }
 
     @Get("/title")
-    public List<SearchByTitleBookDto> getTitle(@NonNull @NotBlank @QueryValue final String titleSearch)
+    public List<SearchBookByTitle> getTitle(@NonNull @NotBlank @QueryValue final String titleSearch)
     {
         return this.books.searchByTitle(titleSearch);
     }
 
     @Get("/genre")
-    public List<SearchByGenreBookDto> getGenre(
+    public List<SearchBookByGenre> getGenre(
         @NonNull @NotEmpty @Format("csv") @QueryValue final Iterable<String> genres
     )
         throws InvalidGenreException
@@ -93,8 +90,14 @@ public class BookController
     }
 
     @Get("/isbn")
-    public BookDto getIsbn(@NonNull @NotBlank @QueryValue final String isbn)
+    public GetBookById getIsbn(@NonNull @NotBlank @QueryValue final String isbn)
     {
         return this.books.getByISBN(isbn).orElse(null);
+    }
+
+    @Get("/id")
+    public GetBookById getId(@NonNull @QueryValue final UUID id)
+    {
+        return this.books.getById(id).orElse(null);
     }
 }

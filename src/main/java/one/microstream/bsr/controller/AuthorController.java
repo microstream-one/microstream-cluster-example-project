@@ -1,75 +1,72 @@
 package one.microstream.bsr.controller;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
 import io.micronaut.core.annotation.NonNull;
+import io.micronaut.core.convert.format.Format;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Delete;
 import io.micronaut.http.annotation.Get;
-import io.micronaut.http.annotation.Patch;
+import io.micronaut.http.annotation.PathVariable;
+import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Put;
 import io.micronaut.http.annotation.QueryValue;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import one.microstream.bsr.dto.AuthorDto;
-import one.microstream.bsr.dto.GetAuthorByIdDto;
-import one.microstream.bsr.dto.InsertAuthorDto;
-import one.microstream.bsr.dto.SearchAuthorByNameDto;
+import one.microstream.bsr.dto.GetAuthorById;
+import one.microstream.bsr.dto.InsertAuthor;
+import one.microstream.bsr.dto.SearchAuthorByName;
+import one.microstream.bsr.dto.UpdateAuthor;
 import one.microstream.bsr.exception.InvalidAuthorIdException;
-import one.microstream.bsr.service.AuthorService;
+import one.microstream.bsr.repository.AuthorRepository;
 
 @Controller("/book")
 public class AuthorController
 {
-    private final AuthorService authors;
+    private final AuthorRepository authors;
 
-    public AuthorController(final AuthorService authors)
+    public AuthorController(final AuthorRepository authors)
     {
         this.authors = authors;
     }
 
-    @Put
-    public void put(@NonNull @Valid @Body final InsertAuthorDto author)
+    @Post
+    public void insert(@NonNull @NotEmpty @Body final List<@NonNull @Valid InsertAuthor> insert)
     {
-        this.authors.insert(author);
+        this.authors.insert(insert);
     }
 
-    @Put("/batch")
-    public void putBatch(@NonNull @NotEmpty @Body final List<@NonNull @Valid InsertAuthorDto> authorDtos)
+    @Put("/{id}")
+    public void update(@NonNull @PathVariable final UUID id, @NonNull @Valid @Body final UpdateAuthor update)
     {
-        this.authors.insertAll(authorDtos);
+        this.authors.update(id, update);
     }
 
-    @Patch
-    public void patch(@NonNull @Valid @Body final AuthorDto author)
+    @Delete("/{id}")
+    public void delete(@NonNull @PathVariable final UUID id)
     {
-        this.authors.update(author);
-    }
-
-    @Delete
-    public void delete(@NonNull @Body final UUID authorId)
-    {
-        this.authors.delete(authorId);
+        this.authors.delete(Arrays.asList(id));
     }
 
     @Delete("/batch")
-    public void deleteBatch(@NonNull @NotEmpty @Body final List<@NonNull UUID> authorIds)
+    public void deleteBatch(@NonNull @NotEmpty @Format("csv") @QueryValue final Iterable<@NonNull UUID> ids)
         throws InvalidAuthorIdException
     {
-        this.authors.deleteAll(authorIds);
+        this.authors.delete(ids);
     }
 
     @Get("/name")
-    public List<SearchAuthorByNameDto> getName(@NonNull @NotBlank @QueryValue final String nameSearch)
+    public List<SearchAuthorByName> searchByName(@NonNull @NotBlank @QueryValue final String nameSearch)
     {
         return this.authors.searchByName(nameSearch);
     }
 
     @Get("/id")
-    public GetAuthorByIdDto getId(@NonNull @QueryValue final UUID authorId)
+    public GetAuthorById getById(@NonNull @QueryValue final UUID authorId)
     {
         return this.authors.getById(authorId).orElse(null);
     }

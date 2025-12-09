@@ -15,16 +15,16 @@ import one.microstream.bsr.domain.Book;
 
 @Serdeable
 @Introspected
-public record GetAuthorByIdDto(
+public record GetAuthorById(
     @NonNull UUID id,
     @NonNull @NotBlank String name,
     @NonNull @NotBlank String about,
     @NonNull Set<GetAuthorByIdBookDto> books
 )
 {
-    public static GetAuthorByIdDto from(final Author author)
+    public static GetAuthorById from(final Author author)
     {
-        return new GetAuthorByIdDto(
+        return new GetAuthorById(
             author.id(),
             author.name(),
             author.about(),

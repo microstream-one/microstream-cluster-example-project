@@ -20,29 +20,32 @@ import one.microstream.bsr.domain.Book;
  * @param pages           how many pages the book has
  * @param genres          the genres of the book
  * @param publicationDate when the book was published
+ * @param author          the author of the book
  */
 @Serdeable
 @Introspected
-public record SearchByAuthorBookDto(
+public record GetBookById(
     @NonNull UUID id,
     @NonNull @NotBlank String isbn,
     @NonNull @NotBlank String title,
     @NonNull @NotBlank String description,
     @Positive int pages,
     @NonNull Set<@NonNull @NotBlank String> genres,
-    @NonNull LocalDate publicationDate
+    @NonNull LocalDate publicationDate,
+    @NonNull UUID authorId
 )
 {
-    public static SearchByAuthorBookDto from(final Book book)
+    public static GetBookById from(final Book book)
     {
-        return new SearchByAuthorBookDto(
+        return new GetBookById(
             book.id(),
             book.isbn(),
             book.title(),
             book.description(),
             book.pages(),
             book.genres(),
-            book.publicationDate()
+            book.publicationDate(),
+            book.author().id()
         );
     }
 }

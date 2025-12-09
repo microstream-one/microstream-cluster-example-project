@@ -1,6 +1,9 @@
 package one.microstream.bsr.repository;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -11,11 +14,24 @@ import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterLockScope;
 import org.eclipse.serializer.concurrency.LockedExecutor;
 import org.eclipse.store.gigamap.lucene.LuceneIndex;
 import org.eclipse.store.gigamap.types.GigaMap;
+import org.eclipse.store.storage.types.StorageManager;
 
 import io.micronaut.eclipsestore.RootProvider;
 import jakarta.inject.Singleton;
+import one.microstream.bsr.domain.Author;
 import one.microstream.bsr.domain.Book;
 import one.microstream.bsr.domain.DataRoot;
+import one.microstream.bsr.dto.GetBookById;
+import one.microstream.bsr.dto.InsertBook;
+import one.microstream.bsr.dto.SearchBookByAuthor;
+import one.microstream.bsr.dto.SearchBookByGenre;
+import one.microstream.bsr.dto.SearchBookByTitle;
+import one.microstream.bsr.dto.UpdateBook;
+import one.microstream.bsr.exception.InvalidAuthorIdException;
+import one.microstream.bsr.exception.InvalidBookException;
+import one.microstream.bsr.exception.InvalidGenreException;
+import one.microstream.bsr.exception.IsbnAlreadyExistsException;
+import one.microstream.bsr.gigamap.GigaMapAuthorIndices;
 import one.microstream.bsr.gigamap.GigaMapBookIndices;
 import one.microstream.bsr.lucene.BookDocumentPopulator;
 
@@ -25,68 +41,153 @@ public class BookRepository extends ClusterLockScope
     private static final int DEFAULT_PAGE_SIZE = 512;
 
     private final GigaMap<Book> books;
+    private final GigaMap<Author> authors;
     private final LuceneIndex<Book> luceneIndex;
+    private final Set<String> genres;
+    private final StorageManager storageManager;
 
     public BookRepository(
         final LockedExecutor executor,
         final RootProvider<DataRoot> rootProvider,
+        final StorageManager storageManager,
         final LuceneIndex<Book> luceneIndex
     )
     {
         super(executor);
-        this.books = rootProvider.root().books();
+        final var root = rootProvider.root();
+        this.books = root.books();
+        this.authors = root.authors();
+        this.genres = root.genres();
         this.luceneIndex = luceneIndex;
+        this.storageManager = storageManager;
     }
 
-    public Optional<Book> getById(final UUID id)
+    public void insert(final List<InsertBook> insert)
     {
-        return this.read(() -> this.books.query(GigaMapBookIndices.ID.is(id)).findFirst());
+        this.write(() ->
+        {
+            this.validateInsert(insert);
+
+            // these are the authors that will have to be modified from the insert
+            final Map<UUID, Author> cachedAuthors = new HashMap<>();
+            for (final var insertBook : insert)
+            {
+                cachedAuthors.computeIfAbsent(
+                    insertBook.authorId(),
+                    id -> this.authors.query(GigaMapAuthorIndices.ID.is(id))
+                        .findFirst()
+                        .orElseThrow(() -> new InvalidAuthorIdException(id))
+                );
+            }
+
+            final List<Book> newBooks = insert.stream()
+                .map(
+                    b -> new Book(
+                        UUID.randomUUID(),
+                        b.isbn(),
+                        b.title(),
+                        b.description(),
+                        b.pages(),
+                        b.genres(),
+                        b.publicationDate(),
+                        cachedAuthors.get(b.authorId())
+                    )
+                )
+                .toList();
+
+            if (!newBooks.isEmpty())
+            {
+                this.books.addAll(newBooks);
+                this.books.store();
+            }
+
+            // add the new books to the author book lists
+            for (final var book : newBooks)
+            {
+                book.author().books().add(book);
+            }
+
+            // only store the changed book lists
+            this.storageManager.storeAll(cachedAuthors.values());
+        });
     }
 
-    public Optional<Book> getByISBN(final String isbn)
+    private void validateInsert(final List<InsertBook> insert)
     {
-        return this.read(() -> this.books.query(GigaMapBookIndices.ISBN.is(isbn)).findFirst());
+        for (final var book : insert)
+        {
+            // check for isbn uniqueness in the insert and the storage
+            final String isbn = book.isbn();
+            if (
+                insert.stream().map(b -> b.isbn()).filter(isbn::equals).count() > 1
+                    || this.books.query(GigaMapBookIndices.ISBN.is(isbn))
+                        .findFirst()
+                        .isPresent()
+            )
+            {
+                throw new IsbnAlreadyExistsException(isbn);
+            }
+
+            // check if genres exist
+            for (final var genre : book.genres())
+            {
+                if (!this.genres.contains(genre))
+                {
+                    throw new InvalidGenreException(genre);
+                }
+            }
+        }
+    }
+
+    public Optional<GetBookById> getById(final UUID id)
+    {
+        return this.read(() -> this.books.query(GigaMapBookIndices.ID.is(id)).findFirst()).map(GetBookById::from);
+    }
+
+    public Optional<GetBookById> getByISBN(final String isbn)
+    {
+        return this.read(() -> this.books.query(GigaMapBookIndices.ISBN.is(isbn)).findFirst().map(GetBookById::from));
     }
 
     /**
      * Searches books by title using a {@link WildcardQuery}
      */
-    public List<Book> searchByTitle(final String titleWildcardSearch)
+    public List<SearchBookByTitle> searchByTitle(final String titleWildcardSearch)
     {
         final var query = new WildcardQuery(new Term(BookDocumentPopulator.TITLE_FIELD, titleWildcardSearch));
-        return this.read(() -> this.luceneIndex.query(query, DEFAULT_PAGE_SIZE));
+        return this.read(() -> this.luceneIndex.query(query, DEFAULT_PAGE_SIZE))
+            .stream()
+            .map(SearchBookByTitle::from)
+            .toList();
     }
 
-    public List<Book> searchByGenre(final Set<String> genres)
+    public List<SearchBookByGenre> searchByGenre(final Set<String> genres)
     {
         // TODO replace with lucene search TermInSetQuery
-        return this.read(() ->
+        final var storedBooks = this.read(() ->
         {
-            try (final var storedBooks = this.books.query().stream())
+            try (final var queryStream = this.books.query().stream())
             {
-                return storedBooks.limit(DEFAULT_PAGE_SIZE)
+                return queryStream.limit(DEFAULT_PAGE_SIZE)
                     .filter(b -> b.genres().containsAll(genres))
                     .toList();
             }
         });
+        // need to re-stream again, or else we would violate the read lock
+        return storedBooks.stream().map(SearchBookByGenre::from).toList();
     }
 
-    public void insert(final Book book)
+    public List<SearchBookByAuthor> searchByAuthor(final UUID id)
     {
-        this.write(() ->
-        {
-            this.books.add(book);
-            this.books.store();
-        });
-    }
-
-    public void insertAll(final Iterable<Book> books)
-    {
-        this.write(() ->
-        {
-            this.books.addAll(books);
-            this.books.store();
-        });
+        return this.read(
+            () -> this.authors.query(GigaMapAuthorIndices.ID.is(id))
+                .findFirst()
+                .orElseThrow(() -> new InvalidAuthorIdException(id))
+        )
+            .books()
+            .stream()
+            .map(SearchBookByAuthor::from)
+            .toList();
     }
 
     /**
@@ -97,60 +198,52 @@ public class BookRepository extends ClusterLockScope
      *             book in the storage to update
      * @return <code>true</code> if the book was found and updated
      */
-    public boolean update(final Book book)
+    public void update(final UUID id, final UpdateBook update)
     {
-        return this.write(() ->
+        this.write(() ->
         {
-            final Book storedBook = this.getById(book.id()).orElse(null);
-            if (storedBook != null)
-            {
-                this.books.replace(storedBook, book);
-                this.books.store();
-                return true;
-            }
-            return false;
+            final Book storedBook = this.books.query(GigaMapBookIndices.ID.is(id))
+                .findFirst()
+                .orElseThrow(() -> new InvalidBookException(id));
+            this.books.replace(
+                storedBook,
+                new Book(
+                    id,
+                    update.isbn(),
+                    update.title(),
+                    update.description(),
+                    update.pages(),
+                    update.genres(),
+                    update.publicationDate(),
+                    storedBook.author()
+                )
+            );
+            this.books.store();
         });
     }
 
     /**
      * @return <code>true</code> if the book has been removed from the storage
      */
-    public boolean delete(final UUID bookId)
+    public void delete(final Iterable<UUID> bookIds)
     {
-        return this.write(() ->
+        this.write(() ->
         {
-            final long id = this.books.query(GigaMapBookIndices.ID.is(bookId))
-                .findFirst()
-                .map(this.books::remove)
-                .orElse(-1L);
-            if (id != -1)
-            {
-                this.books.store();
-                return true;
-            }
-            return false;
-        });
-    }
-
-    public boolean deleteAll(final Iterable<UUID> bookIds)
-    {
-        return this.write(() ->
-        {
-            boolean removed = false;
+            final var cachedBooks = new ArrayList<Book>();
             for (final UUID id : bookIds)
             {
-                final var book = this.books.query(GigaMapBookIndices.ID.is(id)).findFirst().orElse(null);
-                if (book != null)
-                {
-                    this.books.remove(book);
-                    removed = true;
-                }
+                // ensure books exist
+                cachedBooks.add(
+                    this.books.query(GigaMapBookIndices.ID.is(id))
+                        .findFirst()
+                        .orElseThrow(() -> new InvalidBookException(id))
+                );
             }
-            if (removed)
+            if (!cachedBooks.isEmpty())
             {
+                cachedBooks.forEach(this.books::remove);
                 this.books.store();
             }
-            return removed;
         });
     }
 }

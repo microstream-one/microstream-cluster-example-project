@@ -1,7 +1,9 @@
 package one.microstream.bsr.repository;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterLockScope;
@@ -11,8 +13,18 @@ import org.eclipse.store.gigamap.types.GigaMap;
 import io.micronaut.eclipsestore.RootProvider;
 import jakarta.inject.Singleton;
 import one.microstream.bsr.domain.Author;
+import one.microstream.bsr.domain.Book;
 import one.microstream.bsr.domain.DataRoot;
+import one.microstream.bsr.dto.GetAuthorById;
+import one.microstream.bsr.dto.InsertAuthor;
+import one.microstream.bsr.dto.InsertAuthor.InsertAuthorBookDto;
+import one.microstream.bsr.dto.SearchAuthorByName;
+import one.microstream.bsr.dto.UpdateAuthor;
+import one.microstream.bsr.exception.InvalidAuthorIdException;
+import one.microstream.bsr.exception.InvalidGenreException;
+import one.microstream.bsr.exception.IsbnAlreadyExistsException;
 import one.microstream.bsr.gigamap.GigaMapAuthorIndices;
+import one.microstream.bsr.gigamap.GigaMapBookIndices;
 
 @Singleton
 public class AuthorRepository extends ClusterLockScope
@@ -20,6 +32,8 @@ public class AuthorRepository extends ClusterLockScope
     private static final int DEFAULT_PAGE_SIZE = 512;
 
     private final GigaMap<Author> authors;
+    private final GigaMap<Book> books;
+    private final Set<String> genres;
 
     public AuthorRepository(
         final LockedExecutor executor,
@@ -27,12 +41,15 @@ public class AuthorRepository extends ClusterLockScope
     )
     {
         super(executor);
-        this.authors = rootProvider.root().authors();
+        final var root = rootProvider.root();
+        this.authors = root.authors();
+        this.books = root.books();
+        this.genres = root.genres();
     }
 
-    public Optional<Author> getById(final UUID id)
+    public Optional<GetAuthorById> getById(final UUID id)
     {
-        return this.read(() -> this.authors.query(GigaMapAuthorIndices.ID.is(id)).findFirst());
+        return this.read(() -> this.authors.query(GigaMapAuthorIndices.ID.is(id)).findFirst()).map(GetAuthorById::from);
     }
 
     /**
@@ -41,37 +58,107 @@ public class AuthorRepository extends ClusterLockScope
      * @return
      * @see String#contains(CharSequence)
      */
-    public List<Author> searchByName(final String containsNameSearch)
+    public List<SearchAuthorByName> searchByName(final String containsNameSearch)
     {
-        // TODO: replace with lucene search
-        final String lowerCaseSearch = containsNameSearch.toLowerCase();
         return this.read(() ->
         {
-            try (final var storedAuthors = this.authors.query().stream())
+            try (
+                final var storedAuthors = this.authors.query(
+                    GigaMapAuthorIndices.NAME.containsIgnoreCase(containsNameSearch)
+                ).stream()
+            )
             {
-                return storedAuthors.filter(a -> a.name().toLowerCase().contains(lowerCaseSearch))
+                return storedAuthors
                     .limit(DEFAULT_PAGE_SIZE)
+                    .map(SearchAuthorByName::from)
                     .toList();
             }
         });
     }
 
-    public void insert(final Author author)
+    public void insert(final List<InsertAuthor> insert) throws IsbnAlreadyExistsException
     {
         this.write(() ->
         {
-            this.authors.add(author);
-            this.authors.store();
+            this.validateInsert(insert);
+
+            boolean modifiedBooks = false;
+
+            for (final var insertAuthor : insert)
+            {
+                final var author = new Author(
+                    UUID.randomUUID(),
+                    insertAuthor.name(),
+                    insertAuthor.about(),
+                    new HashSet<>()
+                );
+                final var authorBooks = insertAuthor.books()
+                    .stream()
+                    .map(
+                        b -> new Book(
+                            UUID.randomUUID(),
+                            b.isbn(),
+                            b.title(),
+                            b.description(),
+                            b.pages(),
+                            b.genres(),
+                            b.publicationDate(),
+                            author
+                        )
+                    )
+                    .toList();
+                author.books().addAll(authorBooks);
+
+                this.authors.add(author);
+
+                if (!authorBooks.isEmpty())
+                {
+                    this.books.addAll(authorBooks);
+                    modifiedBooks = true;
+                }
+            }
+
+            if (!insert.isEmpty())
+            {
+                this.authors.store();
+
+                if (modifiedBooks)
+                {
+                    this.books.store();
+                }
+            }
         });
     }
 
-    public void insertAll(final Iterable<Author> authors)
+    private void validateInsert(final List<InsertAuthor> insert)
     {
-        this.write(() ->
+        final List<InsertAuthorBookDto> insertBooks = insert.stream()
+            .flatMap(a -> a.books().stream())
+            .toList();
+
+        for (final var book : insertBooks)
         {
-            this.authors.addAll(authors);
-            this.authors.store();
-        });
+            // check for isbn uniqueness in the insert and the storage
+            final String isbn = book.isbn();
+            if (
+                insertBooks.stream().map(b -> b.isbn()).filter(isbn::equals).count() > 1
+                    || this.books.query(GigaMapBookIndices.ISBN.is(isbn))
+                        .findFirst()
+                        .isPresent()
+            )
+            {
+                throw new IsbnAlreadyExistsException(isbn);
+            }
+
+            // check if genres exist
+            for (final var genre : book.genres())
+            {
+                if (!this.genres.contains(genre))
+                {
+                    throw new InvalidGenreException(genre);
+                }
+            }
+        }
     }
 
     /**
@@ -82,49 +169,24 @@ public class AuthorRepository extends ClusterLockScope
      *               the author in the storage to update
      * @return <code>true</code> if the author was found and updated
      */
-    public boolean update(final Author author)
+    public void update(final UUID id, final UpdateAuthor update)
     {
-        return this.write(() ->
+        this.write(() ->
         {
-            final Author storedAuthor = this.getById(author.id()).orElse(null);
-            final boolean exists = storedAuthor != null;
-            if (exists)
-            {
-                this.authors.replace(storedAuthor, author);
-                this.authors.store();
-            }
-            return exists;
-        });
-    }
-
-    /**
-     * Removes the author in the storage that matches the specified author id.
-     * 
-     * @return <code>true</code> if the author has been removed from the storage
-     */
-    public boolean delete(final UUID authorId)
-    {
-        return this.write(() ->
-        {
-            final long id = this.authors.query(GigaMapAuthorIndices.ID.is(authorId))
+            final Author author = this.authors.query(GigaMapAuthorIndices.ID.is(id))
                 .findFirst()
-                .map(this.authors::remove)
-                .orElse(-1L);
-            if (id != -1)
-            {
-                this.authors.store();
-                return true;
-            }
-            return false;
+                .orElseThrow(() -> new InvalidAuthorIdException(id));
+            this.authors.replace(author, new Author(id, update.name(), update.about(), author.books()));
+            this.authors.store();
         });
     }
 
-    public boolean deleteAll(final Iterable<UUID> authorIds)
+    public boolean delete(final Iterable<UUID> ids)
     {
         return this.write(() ->
         {
             boolean removed = false;
-            for (final UUID id : authorIds)
+            for (final UUID id : ids)
             {
                 final var author = this.authors.query(GigaMapAuthorIndices.ID.is(id)).findFirst().orElse(null);
                 if (author != null)

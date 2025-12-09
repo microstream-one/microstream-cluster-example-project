@@ -1,6 +1,5 @@
 package one.microstream.bsr.dto;
 
-import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
 
@@ -8,18 +7,24 @@ import io.micronaut.core.annotation.Introspected;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Positive;
+import one.microstream.bsr.domain.Book;
 
 @Serdeable
 @Introspected
-public record InsertBookDto(
-    @NonNull @NotBlank String isbn,
+public record SearchBookByGenre(
+    @NonNull UUID id,
     @NonNull @NotBlank String title,
-    @NonNull @NotBlank String description,
-    @Positive int pages,
     @NonNull Set<@NonNull @NotBlank String> genres,
-    @NonNull LocalDate publicationDate,
     @NonNull UUID authorId
 )
 {
+    public static SearchBookByGenre from(final Book book)
+    {
+        return new SearchBookByGenre(
+            book.id(),
+            book.title(),
+            book.genres(),
+            book.author().id()
+        );
+    }
 }

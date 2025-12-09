@@ -7,10 +7,9 @@ import jakarta.validation.constraints.NotBlank;
 
 @Serdeable
 @Introspected
-public record InsertAuthorDto(
+public record UpdateAuthor(
     @NonNull @NotBlank String name,
-    @NonNull @NotBlank String about,
-    @NonNull @NotBlank String description
+    @NonNull @NotBlank String about
 )
 {
 }

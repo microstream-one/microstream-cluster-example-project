@@ -1,11 +1,14 @@
 package one.microstream.bsr.dto;
 
+import java.time.LocalDate;
+import java.util.Set;
 import java.util.UUID;
 
 import io.micronaut.core.annotation.Introspected;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import one.microstream.bsr.domain.Book;
 
 /**
@@ -20,18 +23,26 @@ import one.microstream.bsr.domain.Book;
  */
 @Serdeable
 @Introspected
-public record SearchByTitleBookDto(
+public record SearchBookByAuthor(
     @NonNull UUID id,
+    @NonNull @NotBlank String isbn,
     @NonNull @NotBlank String title,
-    @NonNull UUID authorId
+    @NonNull @NotBlank String description,
+    @Positive int pages,
+    @NonNull Set<@NonNull @NotBlank String> genres,
+    @NonNull LocalDate publicationDate
 )
 {
-    public static SearchByTitleBookDto from(final Book book)
+    public static SearchBookByAuthor from(final Book book)
     {
-        return new SearchByTitleBookDto(
+        return new SearchBookByAuthor(
             book.id(),
+            book.isbn(),
             book.title(),
-            book.author().id()
+            book.description(),
+            book.pages(),
+            book.genres(),
+            book.publicationDate()
         );
     }
 }

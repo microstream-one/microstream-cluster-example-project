@@ -2,7 +2,6 @@ package one.microstream.bsr.dto;
 
 import java.time.LocalDate;
 import java.util.Set;
-import java.util.UUID;
 
 import io.micronaut.core.annotation.Introspected;
 import io.micronaut.core.annotation.NonNull;
@@ -24,28 +23,24 @@ import one.microstream.bsr.domain.Book;
  */
 @Serdeable
 @Introspected
-public record BookDto(
-    @NonNull UUID id,
+public record UpdateBook(
     @NonNull @NotBlank String isbn,
     @NonNull @NotBlank String title,
     @NonNull @NotBlank String description,
     @Positive int pages,
     @NonNull Set<@NonNull @NotBlank String> genres,
-    @NonNull LocalDate publicationDate,
-    @NonNull UUID authorId
+    @NonNull LocalDate publicationDate
 )
 {
-    public static BookDto from(final Book book)
+    public static UpdateBook from(final Book book)
     {
-        return new BookDto(
-            book.id(),
+        return new UpdateBook(
             book.isbn(),
             book.title(),
             book.description(),
             book.pages(),
             book.genres(),
-            book.publicationDate(),
-            book.author().id()
+            book.publicationDate()
         );
     }
 }

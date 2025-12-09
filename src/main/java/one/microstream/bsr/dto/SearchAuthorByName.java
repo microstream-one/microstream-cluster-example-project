@@ -10,13 +10,13 @@ import one.microstream.bsr.domain.Author;
 
 @Serdeable
 @Introspected
-public record SearchAuthorByNameDto(
+public record SearchAuthorByName(
     @NonNull UUID id,
     @NonNull @NotBlank String name
 )
 {
-    public static SearchAuthorByNameDto from(final Author author)
+    public static SearchAuthorByName from(final Author author)
     {
-        return new SearchAuthorByNameDto(author.id(), author.name());
+        return new SearchAuthorByName(author.id(), author.name());
     }
 }
