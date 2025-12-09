@@ -92,26 +92,31 @@ public class AuthorRepository extends ClusterLockScope
                     insertAuthor.about(),
                     new HashSet<>()
                 );
-                final var authorBooks = insertAuthor.books()
-                    .stream()
-                    .map(
-                        b -> new Book(
-                            UUID.randomUUID(),
-                            b.isbn(),
-                            b.title(),
-                            b.description(),
-                            b.pages(),
-                            b.genres(),
-                            b.publicationDate(),
-                            author
+
+                List<Book> authorBooks = null;
+                if (insertAuthor.books() != null)
+                {
+                    authorBooks = insertAuthor.books()
+                        .stream()
+                        .map(
+                            b -> new Book(
+                                UUID.randomUUID(),
+                                b.isbn(),
+                                b.title(),
+                                b.description(),
+                                b.pages(),
+                                b.genres(),
+                                b.publicationDate(),
+                                author
+                            )
                         )
-                    )
-                    .toList();
-                author.books().addAll(authorBooks);
+                        .toList();
+                    author.books().addAll(authorBooks);
+                }
 
                 this.authors.add(author);
 
-                if (!authorBooks.isEmpty())
+                if (authorBooks != null)
                 {
                     this.books.addAll(authorBooks);
                     modifiedBooks = true;
@@ -133,6 +138,7 @@ public class AuthorRepository extends ClusterLockScope
     private void validateInsert(final List<InsertAuthor> insert)
     {
         final List<InsertAuthorBookDto> insertBooks = insert.stream()
+            .filter(a -> a.books() != null)
             .flatMap(a -> a.books().stream())
             .toList();
 
