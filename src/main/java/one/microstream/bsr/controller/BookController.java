@@ -55,16 +55,16 @@ public class BookController
     }
 
     @Delete
-    public void delete(@NonNull @Valid @Body final BookDto book)
+    public void delete(@NonNull @Body final UUID bookId)
     {
-        this.books.delete(book);
+        this.books.delete(bookId);
     }
 
     @Delete("/batch")
-    public void deleteBatch(@NonNull @NotEmpty @Body final List<@NonNull @Valid BookDto> books)
+    public void deleteBatch(@NonNull @NotEmpty @Body final List<@NonNull UUID> bookIds)
         throws InvalidAuthorIdException
     {
-        this.books.deleteAll(books);
+        this.books.deleteAll(bookIds);
     }
 
     @Get("/author")
@@ -88,8 +88,8 @@ public class BookController
     }
 
     @Get("/isbn")
-    public List<BookDto> getIsbn(@NonNull @NotBlank @QueryValue final String isbn)
+    public BookDto getIsbn(@NonNull @NotBlank @QueryValue final String isbn)
     {
-        return this.books.getByISBN(isbn);
+        return this.books.getByISBN(isbn).orElse(null);
     }
 }

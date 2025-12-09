@@ -18,7 +18,6 @@ import one.microstream.bsr.domain.Book;
 import one.microstream.bsr.domain.DataRoot;
 import one.microstream.bsr.gigamap.GigaMapBookIndices;
 import one.microstream.bsr.lucene.BookDocumentPopulator;
-import one.microstream.bsr.util.BooleanRef;
 
 @Singleton
 public class BookRepository extends ClusterLockScope
@@ -106,6 +105,7 @@ public class BookRepository extends ClusterLockScope
             if (storedBook != null)
             {
                 this.books.replace(storedBook, book);
+                this.books.store();
                 return true;
             }
             return false;
@@ -113,31 +113,44 @@ public class BookRepository extends ClusterLockScope
     }
 
     /**
-     * Removes the book in the storage that matches the specified books id.
-     * 
-     * @param book the book to remove (checks for matching id)
      * @return <code>true</code> if the book has been removed from the storage
      */
-    public boolean delete(final Book book)
+    public boolean delete(final UUID bookId)
     {
-        final long removedId = this.write(() -> this.books.remove(book));
-        return removedId != -1;
+        return this.write(() ->
+        {
+            final long id = this.books.query(GigaMapBookIndices.ID.is(bookId))
+                .findFirst()
+                .map(this.books::remove)
+                .orElse(-1L);
+            if (id != -1)
+            {
+                this.books.store();
+                return true;
+            }
+            return false;
+        });
     }
 
-    public boolean deleteAll(final Iterable<Book> books)
+    public boolean deleteAll(final Iterable<UUID> bookIds)
     {
-        final var removed = new BooleanRef();
-        this.write(() ->
+        return this.write(() ->
         {
-            for (final var book : books)
+            boolean removed = false;
+            for (final UUID id : bookIds)
             {
-                final long removedId = this.books.remove(book);
-                if (removedId != -1)
+                final var book = this.books.query(GigaMapBookIndices.ID.is(id)).findFirst().orElse(null);
+                if (book != null)
                 {
-                    removed.set(true);
+                    this.books.remove(book);
+                    removed = true;
                 }
             }
+            if (removed)
+            {
+                this.books.store();
+            }
+            return removed;
         });
-        return removed.get();
     }
 }

@@ -44,11 +44,14 @@ public class AuthorRepository extends ClusterLockScope
     public List<Author> searchByName(final String containsNameSearch)
     {
         // TODO: replace with lucene search
+        final String lowerCaseSearch = containsNameSearch.toLowerCase();
         return this.read(() ->
         {
             try (final var storedAuthors = this.authors.query().stream())
             {
-                return storedAuthors.limit(DEFAULT_PAGE_SIZE).toList();
+                return storedAuthors.filter(a -> a.name().toLowerCase().contains(lowerCaseSearch))
+                    .limit(DEFAULT_PAGE_SIZE)
+                    .toList();
             }
         });
     }
@@ -88,6 +91,7 @@ public class AuthorRepository extends ClusterLockScope
             if (exists)
             {
                 this.authors.replace(storedAuthor, author);
+                this.authors.store();
             }
             return exists;
         });
@@ -96,12 +100,44 @@ public class AuthorRepository extends ClusterLockScope
     /**
      * Removes the author in the storage that matches the specified author id.
      * 
-     * @param author the author to remove (checks for matching id)
      * @return <code>true</code> if the author has been removed from the storage
      */
-    public boolean delete(final Author author)
+    public boolean delete(final UUID authorId)
     {
-        final long removedId = this.write(() -> this.authors.remove(author));
-        return removedId != -1;
+        return this.write(() ->
+        {
+            final long id = this.authors.query(GigaMapAuthorIndices.ID.is(authorId))
+                .findFirst()
+                .map(this.authors::remove)
+                .orElse(-1L);
+            if (id != -1)
+            {
+                this.authors.store();
+                return true;
+            }
+            return false;
+        });
+    }
+
+    public boolean deleteAll(final Iterable<UUID> authorIds)
+    {
+        return this.write(() ->
+        {
+            boolean removed = false;
+            for (final UUID id : authorIds)
+            {
+                final var author = this.authors.query(GigaMapAuthorIndices.ID.is(id)).findFirst().orElse(null);
+                if (author != null)
+                {
+                    this.authors.remove(author);
+                    removed = true;
+                }
+            }
+            if (removed)
+            {
+                this.authors.store();
+            }
+            return removed;
+        });
     }
 }

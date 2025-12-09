@@ -49,7 +49,15 @@ public class GenreRepository extends ClusterLockScope
      */
     public boolean insert(final String genre) throws NullPointerException
     {
-        return this.write(() -> this.genres.add(genre));
+        return this.write(() ->
+        {
+            final boolean modified = this.genres.add(genre);
+            if (modified)
+            {
+                this.storageManager.store(this.genres);
+            }
+            return modified;
+        });
     }
 
     /**
@@ -68,7 +76,10 @@ public class GenreRepository extends ClusterLockScope
         return this.write(() ->
         {
             final boolean modified = this.genres.addAll(nonNullGenres);
-            this.storageManager.store(this.genres);
+            if (modified)
+            {
+                this.storageManager.store(this.genres);
+            }
             return modified;
         });
     }
@@ -83,12 +94,12 @@ public class GenreRepository extends ClusterLockScope
     {
         return this.write(() ->
         {
-            final boolean removed = this.genres.remove(genre);
-            if (removed)
+            final boolean modified = this.genres.remove(genre);
+            if (modified)
             {
                 this.storageManager.store(this.genres);
             }
-            return removed;
+            return modified;
         });
     }
 

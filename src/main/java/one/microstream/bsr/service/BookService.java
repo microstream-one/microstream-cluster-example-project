@@ -8,10 +8,7 @@ import java.util.UUID;
 import org.apache.commons.lang3.stream.Streams;
 import org.apache.lucene.search.WildcardQuery;
 
-import io.micronaut.core.annotation.NonNull;
 import jakarta.inject.Singleton;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
 import one.microstream.bsr.domain.Author;
 import one.microstream.bsr.domain.Book;
 import one.microstream.bsr.dto.BookDto;
@@ -73,7 +70,7 @@ public class BookService
      */
     public void insert(final InsertBookDto book) throws InvalidAuthorIdException
     {
-        this.books.insert(this.createNewBook(book));
+        this.books.insert(this.toBook(book));
     }
 
     /**
@@ -83,31 +80,29 @@ public class BookService
      */
     public void insertAll(final Iterable<InsertBookDto> books) throws InvalidAuthorIdException
     {
-        final List<Book> convertedBooks = Streams.of(books).map(this::createNewBook).toList();
+        final List<Book> convertedBooks = Streams.of(books).map(this::toBook).toList();
         this.books.insertAll(convertedBooks);
     }
 
     public boolean update(final BookDto book)
     {
-        return this.books.update(this.ensureExistingBook(book));
+        return this.books.update(this.toBook(book));
     }
 
-    public boolean delete(final BookDto book)
+    public boolean delete(final UUID bookId)
     {
-        return this.books.delete(this.toBook(book));
+        return this.books.delete(bookId);
     }
 
-    public boolean deleteAll(@NonNull @NotEmpty final List<@NonNull @Valid BookDto> books)
+    public boolean deleteAll(final Iterable<UUID> bookIds)
     {
-        final List<Book> convertedBooks = Streams.of(books).map(this::lookupBook).toList();
-        return this.books.deleteAll(convertedBooks);
+        return this.books.deleteAll(bookIds);
     }
 
-    private Book createNewBook(final InsertBookDto dto) throws InvalidAuthorIdException
+    private Book toBook(final InsertBookDto dto) throws InvalidAuthorIdException
     {
-        final var author = this.authors.getById(dto.authorId())
-            .orElseThrow(() -> new InvalidAuthorIdException(dto.authorId()));
-        final var genres = this.ensureExistingGenres(dto.genres());
+        final var author = this.ensureExistingAuthor(dto.authorId());
+        final var ensuredGenres = this.ensureExistingGenres(dto.genres());
         final var id = UUID.randomUUID();
         return new Book(
             id,
@@ -115,28 +110,27 @@ public class BookService
             dto.title(),
             dto.description(),
             dto.pages(),
-            genres,
+            ensuredGenres,
             dto.publicationDate(),
             author
         );
     }
 
-    private Book ensureExistingBook(final BookDto dto) throws InvalidAuthorIdException
+    private Book toBook(final BookDto dto) throws InvalidAuthorIdException, InvalidGenreException
     {
         if (this.getById(dto.id()).isEmpty())
         {
             throw new InvalidBookException(dto.id());
         }
-        final var author = this.authors.getById(dto.authorId())
-            .orElseThrow(() -> new InvalidAuthorIdException(dto.authorId()));
-        final var genres = this.ensureExistingGenres(dto.genres());
+        final var author = this.ensureExistingAuthor(dto.authorId());
+        final var ensuredGenres = this.ensureExistingGenres(dto.genres());
         return new Book(
             dto.id(),
             dto.isbn(),
             dto.title(),
             dto.description(),
             dto.pages(),
-            genres,
+            ensuredGenres,
             dto.publicationDate(),
             author
         );
@@ -145,23 +139,6 @@ public class BookService
     private Author ensureExistingAuthor(final UUID authorId)
     {
         return this.authors.getById(authorId).orElseThrow(() -> new InvalidAuthorIdException(authorId));
-    }
-
-    private Book ensure(final BookDto dto) throws InvalidAuthorIdException
-    {
-        final var author = this.authors.getById(dto.authorId())
-            .orElseThrow(() -> new InvalidAuthorIdException(dto.authorId()));
-        final var genres = this.ensureExistingGenres(dto.genres());
-        return new Book(
-            UUID.randomUUID(),
-            dto.isbn(),
-            dto.title(),
-            dto.description(),
-            dto.pages(),
-            genres,
-            dto.publicationDate(),
-            author
-        );
     }
 
     private Set<String> ensureExistingGenres(final Set<String> genres) throws InvalidGenreException
@@ -174,6 +151,6 @@ public class BookService
                 throw new InvalidGenreException("Could not find genre '%s'".formatted(genre));
             }
         }
-        return genres;
+        return storedGenres;
     }
 }
