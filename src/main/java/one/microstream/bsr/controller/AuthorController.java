@@ -24,7 +24,7 @@ import one.microstream.bsr.dto.UpdateAuthor;
 import one.microstream.bsr.exception.InvalidAuthorIdException;
 import one.microstream.bsr.repository.AuthorRepository;
 
-@Controller("/book")
+@Controller("/author")
 public class AuthorController
 {
     private final AuthorRepository authors;

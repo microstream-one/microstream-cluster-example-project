@@ -1,10 +1,7 @@
 package one.microstream.bsr.repository;
 
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterLockScope;
 import org.eclipse.serializer.concurrency.LockedExecutor;
@@ -61,30 +58,6 @@ public class GenreRepository extends ClusterLockScope
     }
 
     /**
-     * Inserts all the {@link Genre}s into the storage. <code>null</code> elements
-     * are ignored.
-     * 
-     * @param genres the genres to insert
-     * @return <code>true</code> if any genre did not already exist in the storage
-     */
-    public boolean insertAll(final Collection<String> genres) throws NullPointerException
-    {
-        // the Set might allow null-values, so we filter
-        final Set<String> nonNullGenres = genres.stream()
-            .filter(Objects::nonNull)
-            .collect(Collectors.toUnmodifiableSet());
-        return this.write(() ->
-        {
-            final boolean modified = this.genres.addAll(nonNullGenres);
-            if (modified)
-            {
-                this.storageManager.store(this.genres);
-            }
-            return modified;
-        });
-    }
-
-    /**
      * Deletes the genre from the storage.
      * 
      * @param genre the genre to delete
@@ -100,19 +73,6 @@ public class GenreRepository extends ClusterLockScope
                 this.storageManager.store(this.genres);
             }
             return modified;
-        });
-    }
-
-    public boolean deleteAll(final Collection<String> genres)
-    {
-        return this.write(() ->
-        {
-            final boolean removed = this.genres.removeAll(genres);
-            if (removed)
-            {
-                this.storageManager.store(this.genres);
-            }
-            return removed;
         });
     }
 }
