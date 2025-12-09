@@ -13,6 +13,9 @@ import one.microstream.bsr.domain.Author;
 import one.microstream.bsr.domain.Book;
 import one.microstream.bsr.dto.BookDto;
 import one.microstream.bsr.dto.InsertBookDto;
+import one.microstream.bsr.dto.SearchByAuthorBookDto;
+import one.microstream.bsr.dto.SearchByGenreBookDto;
+import one.microstream.bsr.dto.SearchByTitleBookDto;
 import one.microstream.bsr.exception.InvalidAuthorIdException;
 import one.microstream.bsr.exception.InvalidBookException;
 import one.microstream.bsr.exception.InvalidGenreException;
@@ -47,20 +50,20 @@ public class BookService
     /**
      * Searches books by title using a {@link WildcardQuery}
      */
-    public List<BookDto> searchByTitle(final String titleWildcardSearch)
+    public List<SearchByTitleBookDto> searchByTitle(final String titleWildcardSearch)
     {
-        return this.books.searchByTitle(titleWildcardSearch).stream().map(BookDto::from).toList();
+        return this.books.searchByTitle(titleWildcardSearch).stream().map(SearchByTitleBookDto::from).toList();
     }
 
-    public List<BookDto> searchByAuthor(final UUID authorId) throws InvalidAuthorIdException
+    public List<SearchByAuthorBookDto> searchByAuthor(final UUID authorId) throws InvalidAuthorIdException
     {
         final Author author = this.authors.getById(authorId).orElseThrow(() -> new InvalidAuthorIdException(authorId));
-        return author.books().stream().map(BookDto::from).toList();
+        return author.books().stream().map(SearchByAuthorBookDto::from).toList();
     }
 
-    public List<BookDto> searchByGenre(final Set<String> genres) throws InvalidGenreException
+    public List<SearchByGenreBookDto> searchByGenre(final Set<String> genres) throws InvalidGenreException
     {
-        return this.books.searchByGenre(genres).stream().map(BookDto::from).toList();
+        return this.books.searchByGenre(genres).stream().map(SearchByGenreBookDto::from).toList();
     }
 
     /**

@@ -11,7 +11,9 @@ import org.apache.commons.lang3.stream.Streams;
 import jakarta.inject.Singleton;
 import one.microstream.bsr.domain.Author;
 import one.microstream.bsr.dto.AuthorDto;
+import one.microstream.bsr.dto.GetAuthorByIdDto;
 import one.microstream.bsr.dto.InsertAuthorDto;
+import one.microstream.bsr.dto.SearchAuthorByNameDto;
 import one.microstream.bsr.exception.InvalidAuthorIdException;
 import one.microstream.bsr.repository.AuthorRepository;
 
@@ -25,14 +27,14 @@ public class AuthorService
         this.authors = authors;
     }
 
-    public Optional<AuthorDto> getById(final UUID id)
+    public Optional<GetAuthorByIdDto> getById(final UUID id)
     {
-        return this.authors.getById(id).map(AuthorDto::from);
+        return this.authors.getById(id).map(GetAuthorByIdDto::from);
     }
 
-    public List<AuthorDto> searchByName(final String containsNameSearch)
+    public List<SearchAuthorByNameDto> searchByName(final String containsNameSearch)
     {
-        return this.authors.searchByName(containsNameSearch).stream().map(AuthorDto::from).toList();
+        return this.authors.searchByName(containsNameSearch).stream().map(SearchAuthorByNameDto::from).toList();
     }
 
     public void insert(final InsertAuthorDto author)

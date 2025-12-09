@@ -15,7 +15,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import one.microstream.bsr.dto.AuthorDto;
+import one.microstream.bsr.dto.GetAuthorByIdDto;
 import one.microstream.bsr.dto.InsertAuthorDto;
+import one.microstream.bsr.dto.SearchAuthorByNameDto;
 import one.microstream.bsr.exception.InvalidAuthorIdException;
 import one.microstream.bsr.service.AuthorService;
 
@@ -61,13 +63,13 @@ public class AuthorController
     }
 
     @Get("/name")
-    public List<AuthorDto> getName(@NonNull @NotBlank @QueryValue final String nameSearch)
+    public List<SearchAuthorByNameDto> getName(@NonNull @NotBlank @QueryValue final String nameSearch)
     {
         return this.authors.searchByName(nameSearch);
     }
 
     @Get("/id")
-    public AuthorDto getId(@NonNull @QueryValue final UUID authorId)
+    public GetAuthorByIdDto getId(@NonNull @QueryValue final UUID authorId)
     {
         return this.authors.getById(authorId).orElse(null);
     }

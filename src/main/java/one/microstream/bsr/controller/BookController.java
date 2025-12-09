@@ -21,6 +21,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import one.microstream.bsr.dto.BookDto;
 import one.microstream.bsr.dto.InsertBookDto;
+import one.microstream.bsr.dto.SearchByAuthorBookDto;
+import one.microstream.bsr.dto.SearchByGenreBookDto;
+import one.microstream.bsr.dto.SearchByTitleBookDto;
 import one.microstream.bsr.exception.InvalidAuthorIdException;
 import one.microstream.bsr.exception.InvalidGenreException;
 import one.microstream.bsr.service.BookService;
@@ -68,19 +71,21 @@ public class BookController
     }
 
     @Get("/author")
-    public List<BookDto> getAuthor(@NonNull @Body final UUID authorId) throws InvalidAuthorIdException
+    public List<SearchByAuthorBookDto> getAuthor(@NonNull @Body final UUID authorId) throws InvalidAuthorIdException
     {
         return this.books.searchByAuthor(authorId);
     }
 
     @Get("/title")
-    public List<BookDto> getTitle(@NonNull @NotBlank @QueryValue final String titleSearch)
+    public List<SearchByTitleBookDto> getTitle(@NonNull @NotBlank @QueryValue final String titleSearch)
     {
         return this.books.searchByTitle(titleSearch);
     }
 
     @Get("/genre")
-    public List<BookDto> getGenre(@NonNull @NotEmpty @Format("csv") @QueryValue final Iterable<String> genres)
+    public List<SearchByGenreBookDto> getGenre(
+        @NonNull @NotEmpty @Format("csv") @QueryValue final Iterable<String> genres
+    )
         throws InvalidGenreException
     {
         final Set<String> genresSet = Streams.of(genres).collect(Collectors.toUnmodifiableSet());
