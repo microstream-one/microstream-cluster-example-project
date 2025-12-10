@@ -13,6 +13,7 @@ public final class DataRoot
 {
     private final GigaMap<Author> authors = GigaMap.<Author>Builder()
         .withBitmapIdentityIndex(GigaMapAuthorIndices.ID)
+        .withBitmapIndex(GigaMapAuthorIndices.NAME)
         .build();
     private final GigaMap<Book> books = GigaMap.<Book>Builder()
         .withBitmapIdentityIndex(GigaMapBookIndices.ID)

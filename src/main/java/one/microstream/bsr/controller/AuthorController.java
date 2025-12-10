@@ -60,9 +60,9 @@ public class AuthorController
     }
 
     @Get("/name")
-    public List<SearchAuthorByName> searchByName(@NonNull @NotBlank @QueryValue final String nameSearch)
+    public List<SearchAuthorByName> searchByName(@NonNull @NotBlank @QueryValue final String search)
     {
-        return this.authors.searchByName(nameSearch);
+        return this.authors.searchByName(search);
     }
 
     @Get("/id/{id}")

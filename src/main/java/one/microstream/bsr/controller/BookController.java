@@ -74,15 +74,13 @@ public class BookController
     }
 
     @Get("/title")
-    public List<SearchBookByTitle> getTitle(@NonNull @NotBlank @QueryValue final String titleSearch)
+    public List<SearchBookByTitle> searchByTitle(@NonNull @NotBlank @QueryValue final String search)
     {
-        return this.books.searchByTitle(titleSearch);
+        return this.books.searchByTitle(search);
     }
 
     @Get("/genre")
-    public List<SearchBookByGenre> getGenre(
-        @NonNull @Format("csv") @QueryValue final Iterable<String> genres
-    )
+    public List<SearchBookByGenre> searchByGenre(@NonNull @Format("csv") @QueryValue final Iterable<String> genres)
         throws InvalidGenreException
     {
         final Set<String> genresSet = Streams.of(genres).collect(Collectors.toUnmodifiableSet());
@@ -90,13 +88,13 @@ public class BookController
     }
 
     @Get("/isbn")
-    public GetBookById getIsbn(@NonNull @NotBlank @QueryValue final String isbn)
+    public GetBookById getByIsbn(@NonNull @NotBlank @QueryValue final String isbn)
     {
         return this.books.getByISBN(isbn).orElse(null);
     }
 
     @Get("/id")
-    public GetBookById getId(@NonNull @QueryValue final UUID id)
+    public GetBookById getById(@NonNull @QueryValue final UUID id)
     {
         return this.books.getById(id).orElse(null);
     }
