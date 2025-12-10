@@ -10,6 +10,7 @@ import java.util.UUID;
 
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterLockScope;
 import org.eclipse.serializer.concurrency.LockedExecutor;
+import org.eclipse.serializer.reference.Lazy;
 import org.eclipse.store.gigamap.types.GigaMap;
 
 import io.micronaut.eclipsestore.RootProvider;
@@ -94,7 +95,7 @@ public class AuthorRepository extends ClusterLockScope
                     UUID.randomUUID(),
                     insertAuthor.name(),
                     insertAuthor.about(),
-                    new HashSet<>()
+                    Lazy.Reference(new HashSet<>())
                 );
                 returnDtos.add(GetAuthorById.from(author));
 
@@ -116,7 +117,7 @@ public class AuthorRepository extends ClusterLockScope
                             )
                         )
                         .toList();
-                    author.books().addAll(authorBooks);
+                    author.books().get().addAll(authorBooks);
                 }
 
                 this.authors.add(author);
@@ -212,7 +213,7 @@ public class AuthorRepository extends ClusterLockScope
             {
                 for (final var author : cachedAuthors)
                 {
-                    for (final var book : author.books())
+                    for (final var book : author.books().get())
                     {
                         this.books.remove(book);
                     }

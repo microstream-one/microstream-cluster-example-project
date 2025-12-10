@@ -15,7 +15,6 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.util.BytesRef;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterLockScope;
 import org.eclipse.serializer.concurrency.LockedExecutor;
 import org.eclipse.store.gigamap.lucene.LuceneIndex;
@@ -112,7 +111,7 @@ public class BookRepository extends ClusterLockScope
             for (final var book : newBooks)
             {
                 // add the new books to the author book lists
-                book.author().books().add(book);
+                book.author().books().get().add(book);
 
                 // add as return value
                 returnDtos.add(GetBookById.from(book));
@@ -201,6 +200,7 @@ public class BookRepository extends ClusterLockScope
                 .orElseThrow(() -> new InvalidAuthorIdException(id))
         )
             .books()
+            .get()
             .stream()
             .map(SearchBookByAuthor::from)
             .toList();
@@ -263,7 +263,7 @@ public class BookRepository extends ClusterLockScope
                     // update books gigamap
                     this.books.remove(book);
                     // update author book set
-                    final var authorBooks = book.author().books();
+                    final var authorBooks = book.author().books().get();
                     authorBooks.remove(book);
                     touchedSets.add(authorBooks);
                 }

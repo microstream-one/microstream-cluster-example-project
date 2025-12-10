@@ -28,7 +28,7 @@ public record GetAuthorById(
             author.id(),
             author.name(),
             author.about(),
-            GetAuthorByIdBookDto.fromSet(author.books())
+            GetAuthorByIdBookDto.fromSet(author.books().get())
         );
     }
 
