@@ -10,7 +10,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.util.BytesRef;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterLockScope;
 import org.eclipse.serializer.concurrency.LockedExecutor;
 import org.eclipse.store.gigamap.lucene.LuceneIndex;
@@ -34,6 +39,7 @@ import one.microstream.bsr.exception.InvalidGenreException;
 import one.microstream.bsr.exception.IsbnAlreadyExistsException;
 import one.microstream.bsr.gigamap.GigaMapAuthorIndices;
 import one.microstream.bsr.gigamap.GigaMapBookIndices;
+import one.microstream.bsr.lucene.BookDocumentPopulator;
 
 @Singleton
 public class BookRepository extends ClusterLockScope
@@ -161,7 +167,12 @@ public class BookRepository extends ClusterLockScope
      */
     public List<SearchBookByTitle> searchByTitle(final String titleWildcardSearch)
     {
-        return this.read(() -> this.luceneIndex.query("title:*%s*".formatted(titleWildcardSearch), DEFAULT_PAGE_SIZE))
+        return this.read(
+            () -> this.luceneIndex.query(
+                "%s:*%s*".formatted(BookDocumentPopulator.TITLE_FIELD, titleWildcardSearch),
+                DEFAULT_PAGE_SIZE
+            )
+        )
             .stream()
             .map(SearchBookByTitle::from)
             .toList();
@@ -169,15 +180,14 @@ public class BookRepository extends ClusterLockScope
 
     public List<SearchBookByGenre> searchByGenre(final Set<String> genres)
     {
-        // TODO replace with lucene search TermInSetQuery
         final var storedBooks = this.read(() ->
         {
-            try (final var queryStream = this.books.query().stream())
+            final var queryBuilder = new BooleanQuery.Builder();
+            for (final var genre : genres)
             {
-                return queryStream.limit(DEFAULT_PAGE_SIZE)
-                    .filter(b -> b.genres().containsAll(genres))
-                    .toList();
+                queryBuilder.add(new TermQuery(new Term(BookDocumentPopulator.GENRES_FIELD, genre)), Occur.MUST);
             }
+            return this.luceneIndex.query(queryBuilder.build());
         });
         // need to re-stream again, or else we would violate the read lock
         return storedBooks.stream().map(SearchBookByGenre::from).toList();

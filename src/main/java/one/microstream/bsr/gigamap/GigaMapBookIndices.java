@@ -39,9 +39,6 @@ public final class GigaMapBookIndices
         }
     };
 
-    // TODO: genre indexer: can we create an index for a set of strings?
-    //       maybe a TermInSetQuery from Lucene?
-
     public static final IndexerLocalDate<Book> PUBLICATION = new IndexerLocalDate.Abstract<>()
     {
         @Override
