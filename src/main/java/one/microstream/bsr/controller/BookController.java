@@ -18,6 +18,7 @@ import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Put;
 import io.micronaut.http.annotation.QueryValue;
+import io.micronaut.http.exceptions.HttpStatusException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -80,10 +81,15 @@ public class BookController
     }
 
     @Get("/genre")
-    public List<SearchBookByGenre> searchByGenre(@NonNull @Format("csv") @QueryValue final Iterable<String> genres)
-        throws InvalidGenreException
+    public List<SearchBookByGenre> searchByGenre(
+        @NonNull @NotBlank @QueryValue final String genres
+    ) throws InvalidGenreException,
+        HttpStatusException
     {
-        final Set<String> genresSet = Streams.of(genres).collect(Collectors.toUnmodifiableSet());
+        // @Format("csv") doesn't work for single values
+        final Set<String> genresSet = Streams.of(genres.split(","))
+            .filter(s -> !s.isBlank())
+            .collect(Collectors.toUnmodifiableSet());
         return this.books.searchByGenre(genresSet);
     }
 

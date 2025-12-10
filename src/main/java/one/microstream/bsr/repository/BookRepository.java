@@ -10,7 +10,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.WildcardQuery;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterLockScope;
 import org.eclipse.serializer.concurrency.LockedExecutor;
@@ -35,7 +34,6 @@ import one.microstream.bsr.exception.InvalidGenreException;
 import one.microstream.bsr.exception.IsbnAlreadyExistsException;
 import one.microstream.bsr.gigamap.GigaMapAuthorIndices;
 import one.microstream.bsr.gigamap.GigaMapBookIndices;
-import one.microstream.bsr.lucene.BookDocumentPopulator;
 
 @Singleton
 public class BookRepository extends ClusterLockScope
@@ -163,8 +161,7 @@ public class BookRepository extends ClusterLockScope
      */
     public List<SearchBookByTitle> searchByTitle(final String titleWildcardSearch)
     {
-        final var query = new WildcardQuery(new Term(BookDocumentPopulator.TITLE_FIELD, titleWildcardSearch));
-        return this.read(() -> this.luceneIndex.query(query, DEFAULT_PAGE_SIZE))
+        return this.read(() -> this.luceneIndex.query("title:*%s*".formatted(titleWildcardSearch), DEFAULT_PAGE_SIZE))
             .stream()
             .map(SearchBookByTitle::from)
             .toList();
