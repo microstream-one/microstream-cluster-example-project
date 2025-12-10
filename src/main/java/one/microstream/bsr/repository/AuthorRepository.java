@@ -81,7 +81,7 @@ public class AuthorRepository extends ClusterLockScope
     public List<GetAuthorById> insert(final List<InsertAuthor> insert) throws IsbnAlreadyExistsException
     {
         final var returnDtos = new ArrayList<GetAuthorById>(insert.size());
-        
+
         this.write(() ->
         {
             this.validateInsert(insert);
@@ -138,7 +138,7 @@ public class AuthorRepository extends ClusterLockScope
                 }
             }
         });
-        
+
         return Collections.unmodifiableList(returnDtos);
     }
 
@@ -210,7 +210,15 @@ public class AuthorRepository extends ClusterLockScope
             }
             if (!cachedAuthors.isEmpty())
             {
-                cachedAuthors.forEach(this.authors::remove);
+                for (final var author : cachedAuthors)
+                {
+                    for (final var book : author.books())
+                    {
+                        this.books.remove(book);
+                    }
+                    this.authors.remove(author);
+                }
+                this.books.store();
                 this.authors.store();
             }
         });

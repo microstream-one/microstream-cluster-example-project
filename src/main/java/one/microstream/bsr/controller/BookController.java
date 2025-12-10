@@ -61,7 +61,7 @@ public class BookController
     }
 
     @Delete("/batch")
-    public void deleteBatch(@NonNull @NotEmpty @Body final List<@NonNull UUID> ids)
+    public void deleteBatch(@NonNull @Format("csv") @QueryValue final List<@NonNull UUID> ids)
         throws InvalidAuthorIdException
     {
         this.books.delete(ids);
@@ -87,14 +87,14 @@ public class BookController
         return this.books.searchByGenre(genresSet);
     }
 
-    @Get("/isbn")
-    public GetBookById getByIsbn(@NonNull @NotBlank @QueryValue final String isbn)
+    @Get("/isbn/{isbn}")
+    public GetBookById getByIsbn(@NonNull @NotBlank @PathVariable final String isbn)
     {
         return this.books.getByISBN(isbn).orElse(null);
     }
 
-    @Get("/id")
-    public GetBookById getById(@NonNull @QueryValue final UUID id)
+    @Get("/id/{id}")
+    public GetBookById getById(@NonNull @PathVariable final UUID id)
     {
         return this.books.getById(id).orElse(null);
     }

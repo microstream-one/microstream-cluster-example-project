@@ -27,7 +27,6 @@ public record Book(
     Author author
 )
 {
-
     @Override
     public int hashCode()
     {

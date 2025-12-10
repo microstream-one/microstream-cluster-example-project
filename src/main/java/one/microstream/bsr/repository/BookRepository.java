@@ -3,6 +3,7 @@ package one.microstream.bsr.repository;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -114,7 +115,7 @@ public class BookRepository extends ClusterLockScope
             }
 
             // only store the changed book lists
-            this.storageManager.storeAll(cachedAuthors.values());
+            this.storageManager.storeAll(cachedAuthors.values().stream().map(Author::books).toList());
         });
 
         return Collections.unmodifiableList(returnDtos);
@@ -249,8 +250,18 @@ public class BookRepository extends ClusterLockScope
             }
             if (!cachedBooks.isEmpty())
             {
-                cachedBooks.forEach(this.books::remove);
+                final var touchedSets = new HashSet<Set<Book>>();
+                for (final var book : cachedBooks)
+                {
+                    // update books gigamap
+                    this.books.remove(book);
+                    // update author book set
+                    final var authorBooks = book.author().books();
+                    authorBooks.remove(book);
+                    touchedSets.add(authorBooks);
+                }
                 this.books.store();
+                this.storageManager.storeAll(touchedSets);
             }
         });
     }

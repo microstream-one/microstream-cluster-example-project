@@ -10,6 +10,7 @@ import io.micronaut.core.annotation.Nullable;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Positive;
 
 @Serdeable
@@ -27,7 +28,7 @@ public record InsertAuthor(
         @NonNull @NotBlank String title,
         @NonNull @NotBlank String description,
         @Positive int pages,
-        @NonNull Set<@NonNull @NotBlank String> genres,
+        @NonNull @NotEmpty Set<@NonNull @NotBlank String> genres,
         @NonNull LocalDate publicationDate
     )
     {
