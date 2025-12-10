@@ -1,5 +1,7 @@
 package one.microstream.bsr.repository;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -76,8 +78,10 @@ public class AuthorRepository extends ClusterLockScope
         });
     }
 
-    public void insert(final List<InsertAuthor> insert) throws IsbnAlreadyExistsException
+    public List<GetAuthorById> insert(final List<InsertAuthor> insert) throws IsbnAlreadyExistsException
     {
+        final var returnDtos = new ArrayList<GetAuthorById>(insert.size());
+        
         this.write(() ->
         {
             this.validateInsert(insert);
@@ -92,6 +96,7 @@ public class AuthorRepository extends ClusterLockScope
                     insertAuthor.about(),
                     new HashSet<>()
                 );
+                returnDtos.add(GetAuthorById.from(author));
 
                 List<Book> authorBooks = null;
                 if (insertAuthor.books() != null)
@@ -133,6 +138,8 @@ public class AuthorRepository extends ClusterLockScope
                 }
             }
         });
+        
+        return Collections.unmodifiableList(returnDtos);
     }
 
     private void validateInsert(final List<InsertAuthor> insert)
@@ -187,25 +194,25 @@ public class AuthorRepository extends ClusterLockScope
         });
     }
 
-    public boolean delete(final Iterable<UUID> ids)
+    public void delete(final Iterable<UUID> ids)
     {
-        return this.write(() ->
+        this.write(() ->
         {
-            boolean removed = false;
+            final var cachedAuthors = new ArrayList<Author>();
             for (final UUID id : ids)
             {
-                final var author = this.authors.query(GigaMapAuthorIndices.ID.is(id)).findFirst().orElse(null);
-                if (author != null)
-                {
-                    this.authors.remove(author);
-                    removed = true;
-                }
+                // ensure authors exist
+                cachedAuthors.add(
+                    this.authors.query(GigaMapAuthorIndices.ID.is(id))
+                        .findFirst()
+                        .orElseThrow(() -> new InvalidAuthorIdException(id))
+                );
             }
-            if (removed)
+            if (!cachedAuthors.isEmpty())
             {
+                cachedAuthors.forEach(this.authors::remove);
                 this.authors.store();
             }
-            return removed;
         });
     }
 }

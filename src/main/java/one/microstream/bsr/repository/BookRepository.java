@@ -1,6 +1,7 @@
 package one.microstream.bsr.repository;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,8 +63,10 @@ public class BookRepository extends ClusterLockScope
         this.storageManager = storageManager;
     }
 
-    public void insert(final List<InsertBook> insert)
+    public List<GetBookById> insert(final List<InsertBook> insert)
     {
+        final var returnDtos = new ArrayList<GetBookById>(insert.size());
+
         this.write(() ->
         {
             this.validateInsert(insert);
@@ -101,15 +104,20 @@ public class BookRepository extends ClusterLockScope
                 this.books.store();
             }
 
-            // add the new books to the author book lists
             for (final var book : newBooks)
             {
+                // add the new books to the author book lists
                 book.author().books().add(book);
+
+                // add as return value
+                returnDtos.add(GetBookById.from(book));
             }
 
             // only store the changed book lists
             this.storageManager.storeAll(cachedAuthors.values());
         });
+
+        return Collections.unmodifiableList(returnDtos);
     }
 
     private void validateInsert(final List<InsertBook> insert)
@@ -225,12 +233,12 @@ public class BookRepository extends ClusterLockScope
     /**
      * @return <code>true</code> if the book has been removed from the storage
      */
-    public void delete(final Iterable<UUID> bookIds)
+    public void delete(final Iterable<UUID> ids)
     {
         this.write(() ->
         {
             final var cachedBooks = new ArrayList<Book>();
-            for (final UUID id : bookIds)
+            for (final UUID id : ids)
             {
                 // ensure books exist
                 cachedBooks.add(

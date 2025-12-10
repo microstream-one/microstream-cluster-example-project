@@ -42,10 +42,10 @@ public class BookController
     }
 
     @Post
-    public void insert(@NonNull @NotEmpty @Body final List<@NonNull @Valid InsertBook> insert)
+    public List<GetBookById> insert(@NonNull @NotEmpty @Body final List<@NonNull @Valid InsertBook> insert)
         throws InvalidAuthorIdException
     {
-        this.books.insert(insert);
+        return this.books.insert(insert);
     }
 
     @Put("/{id}")
@@ -81,7 +81,7 @@ public class BookController
 
     @Get("/genre")
     public List<SearchBookByGenre> getGenre(
-        @NonNull @NotEmpty @Format("csv") @QueryValue final Iterable<String> genres
+        @NonNull @Format("csv") @QueryValue final Iterable<String> genres
     )
         throws InvalidGenreException
     {

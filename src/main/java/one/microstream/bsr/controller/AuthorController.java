@@ -35,9 +35,9 @@ public class AuthorController
     }
 
     @Post
-    public void insert(@NonNull @NotEmpty @Body final List<@NonNull @Valid InsertAuthor> insert)
+    public List<GetAuthorById> insert(@NonNull @NotEmpty @Body final List<@NonNull @Valid InsertAuthor> insert)
     {
-        this.authors.insert(insert);
+        return this.authors.insert(insert);
     }
 
     @Put("/{id}")
@@ -47,13 +47,13 @@ public class AuthorController
     }
 
     @Delete("/{id}")
-    public void delete(@NonNull @PathVariable final UUID id)
+    public void delete(@NonNull @PathVariable final UUID id) throws InvalidAuthorIdException
     {
         this.authors.delete(Arrays.asList(id));
     }
 
     @Delete("/batch")
-    public void deleteBatch(@NonNull @NotEmpty @Format("csv") @QueryValue final Iterable<@NonNull UUID> ids)
+    public void deleteBatch(@NonNull @Format("csv") @QueryValue final Iterable<@NonNull UUID> ids)
         throws InvalidAuthorIdException
     {
         this.authors.delete(ids);
@@ -65,9 +65,9 @@ public class AuthorController
         return this.authors.searchByName(nameSearch);
     }
 
-    @Get("/id")
-    public GetAuthorById getById(@NonNull @QueryValue final UUID authorId)
+    @Get("/id/{id}")
+    public GetAuthorById getById(@NonNull @PathVariable final UUID id)
     {
-        return this.authors.getById(authorId).orElse(null);
+        return this.authors.getById(id).orElse(null);
     }
 }

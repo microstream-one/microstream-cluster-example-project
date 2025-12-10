@@ -154,6 +154,9 @@
 			<plugin>
 				<groupId>io.micronaut.maven</groupId>
 				<artifactId>micronaut-maven-plugin</artifactId>
+				<configuration>
+					<jvmArguments>--add-exports java.base/jdk.internal.misc=ALL-UNNAMED</jvmArguments>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
