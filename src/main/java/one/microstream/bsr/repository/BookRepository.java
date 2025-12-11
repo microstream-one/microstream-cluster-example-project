@@ -32,9 +32,9 @@ import one.microstream.bsr.dto.SearchBookByAuthor;
 import one.microstream.bsr.dto.SearchBookByGenre;
 import one.microstream.bsr.dto.SearchBookByTitle;
 import one.microstream.bsr.dto.UpdateBook;
-import one.microstream.bsr.exception.InvalidAuthorIdException;
-import one.microstream.bsr.exception.InvalidBookException;
-import one.microstream.bsr.exception.InvalidGenreException;
+import one.microstream.bsr.exception.MissingAuthorException;
+import one.microstream.bsr.exception.MissingBookException;
+import one.microstream.bsr.exception.MissingGenreException;
 import one.microstream.bsr.exception.IsbnAlreadyExistsException;
 import one.microstream.bsr.gigamap.GigaMapAuthorIndices;
 import one.microstream.bsr.gigamap.GigaMapBookIndices;
@@ -83,7 +83,7 @@ public class BookRepository extends ClusterLockScope
                     insertBook.authorId(),
                     id -> this.authors.query(GigaMapAuthorIndices.ID.is(id))
                         .findFirst()
-                        .orElseThrow(() -> new InvalidAuthorIdException(id))
+                        .orElseThrow(() -> new MissingAuthorException(id))
                 );
             }
 
@@ -145,7 +145,7 @@ public class BookRepository extends ClusterLockScope
             {
                 if (!this.genres.contains(genre))
                 {
-                    throw new InvalidGenreException(genre);
+                    throw new MissingGenreException(genre);
                 }
             }
         }
@@ -197,7 +197,7 @@ public class BookRepository extends ClusterLockScope
         return this.read(
             () -> this.authors.query(GigaMapAuthorIndices.ID.is(id))
                 .findFirst()
-                .orElseThrow(() -> new InvalidAuthorIdException(id))
+                .orElseThrow(() -> new MissingAuthorException(id))
         )
             .books()
             .get()
@@ -220,7 +220,7 @@ public class BookRepository extends ClusterLockScope
         {
             final Book storedBook = this.books.query(GigaMapBookIndices.ID.is(id))
                 .findFirst()
-                .orElseThrow(() -> new InvalidBookException(id));
+                .orElseThrow(() -> new MissingBookException(id));
             this.books.replace(
                 storedBook,
                 new Book(
@@ -252,7 +252,7 @@ public class BookRepository extends ClusterLockScope
                 cachedBooks.add(
                     this.books.query(GigaMapBookIndices.ID.is(id))
                         .findFirst()
-                        .orElseThrow(() -> new InvalidBookException(id))
+                        .orElseThrow(() -> new MissingBookException(id))
                 );
             }
             if (!cachedBooks.isEmpty())

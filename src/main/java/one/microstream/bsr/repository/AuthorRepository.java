@@ -23,8 +23,8 @@ import one.microstream.bsr.dto.InsertAuthor;
 import one.microstream.bsr.dto.InsertAuthor.InsertAuthorBookDto;
 import one.microstream.bsr.dto.SearchAuthorByName;
 import one.microstream.bsr.dto.UpdateAuthor;
-import one.microstream.bsr.exception.InvalidAuthorIdException;
-import one.microstream.bsr.exception.InvalidGenreException;
+import one.microstream.bsr.exception.MissingAuthorException;
+import one.microstream.bsr.exception.MissingGenreException;
 import one.microstream.bsr.exception.IsbnAlreadyExistsException;
 import one.microstream.bsr.gigamap.GigaMapAuthorIndices;
 import one.microstream.bsr.gigamap.GigaMapBookIndices;
@@ -48,6 +48,120 @@ public class AuthorRepository extends ClusterLockScope
         this.authors = root.authors();
         this.books = root.books();
         this.genres = root.genres();
+    }
+
+    public List<GetAuthorById> insert(final List<InsertAuthor> insert) throws IsbnAlreadyExistsException
+    {
+        final var returnDtos = new ArrayList<GetAuthorById>(insert.size());
+    
+        this.write(() ->
+        {
+            this.validateInsert(insert);
+    
+            boolean modifiedBooks = false;
+    
+            for (final var insertAuthor : insert)
+            {
+                final var author = new Author(
+                    UUID.randomUUID(),
+                    insertAuthor.name(),
+                    insertAuthor.about(),
+                    Lazy.Reference(new HashSet<>())
+                );
+                returnDtos.add(GetAuthorById.from(author));
+    
+                List<Book> authorBooks = null;
+                if (insertAuthor.books() != null)
+                {
+                    authorBooks = insertAuthor.books()
+                        .stream()
+                        .map(
+                            b -> new Book(
+                                UUID.randomUUID(),
+                                b.isbn(),
+                                b.title(),
+                                b.description(),
+                                b.pages(),
+                                b.genres(),
+                                b.publicationDate(),
+                                author
+                            )
+                        )
+                        .toList();
+                    author.books().get().addAll(authorBooks);
+                }
+    
+                this.authors.add(author);
+    
+                if (authorBooks != null)
+                {
+                    this.books.addAll(authorBooks);
+                    modifiedBooks = true;
+                }
+            }
+    
+            if (!insert.isEmpty())
+            {
+                this.authors.store();
+    
+                if (modifiedBooks)
+                {
+                    this.books.store();
+                }
+            }
+        });
+    
+        return Collections.unmodifiableList(returnDtos);
+    }
+
+    /**
+     * Updates all the fields of the author in the storage with the specified author
+     * matching the id.
+     * 
+     * @param author the author containing all the updated fields and the same id as
+     *               the author in the storage to update
+     * @return <code>true</code> if the author was found and updated
+     */
+    public void update(final UUID id, final UpdateAuthor update)
+    {
+        this.write(() ->
+        {
+            final Author author = this.authors.query(GigaMapAuthorIndices.ID.is(id))
+                .findFirst()
+                .orElseThrow(() -> new MissingAuthorException(id));
+            this.authors.replace(author, new Author(id, update.name(), update.about(), author.books()));
+            this.authors.store();
+        });
+    }
+
+    public void delete(final Iterable<UUID> ids)
+    {
+        this.write(() ->
+        {
+            final var cachedAuthors = new ArrayList<Author>();
+            for (final UUID id : ids)
+            {
+                // ensure authors exist
+                cachedAuthors.add(
+                    this.authors.query(GigaMapAuthorIndices.ID.is(id))
+                        .findFirst()
+                        .orElseThrow(() -> new MissingAuthorException(id))
+                );
+            }
+            if (!cachedAuthors.isEmpty())
+            {
+                for (final var author : cachedAuthors)
+                {
+                    for (final var book : author.books().get())
+                    {
+                        this.books.remove(book);
+                    }
+                    this.authors.remove(author);
+                }
+                this.books.store();
+                this.authors.store();
+            }
+        });
     }
 
     public Optional<GetAuthorById> getById(final UUID id)
@@ -79,70 +193,6 @@ public class AuthorRepository extends ClusterLockScope
         });
     }
 
-    public List<GetAuthorById> insert(final List<InsertAuthor> insert) throws IsbnAlreadyExistsException
-    {
-        final var returnDtos = new ArrayList<GetAuthorById>(insert.size());
-
-        this.write(() ->
-        {
-            this.validateInsert(insert);
-
-            boolean modifiedBooks = false;
-
-            for (final var insertAuthor : insert)
-            {
-                final var author = new Author(
-                    UUID.randomUUID(),
-                    insertAuthor.name(),
-                    insertAuthor.about(),
-                    Lazy.Reference(new HashSet<>())
-                );
-                returnDtos.add(GetAuthorById.from(author));
-
-                List<Book> authorBooks = null;
-                if (insertAuthor.books() != null)
-                {
-                    authorBooks = insertAuthor.books()
-                        .stream()
-                        .map(
-                            b -> new Book(
-                                UUID.randomUUID(),
-                                b.isbn(),
-                                b.title(),
-                                b.description(),
-                                b.pages(),
-                                b.genres(),
-                                b.publicationDate(),
-                                author
-                            )
-                        )
-                        .toList();
-                    author.books().get().addAll(authorBooks);
-                }
-
-                this.authors.add(author);
-
-                if (authorBooks != null)
-                {
-                    this.books.addAll(authorBooks);
-                    modifiedBooks = true;
-                }
-            }
-
-            if (!insert.isEmpty())
-            {
-                this.authors.store();
-
-                if (modifiedBooks)
-                {
-                    this.books.store();
-                }
-            }
-        });
-
-        return Collections.unmodifiableList(returnDtos);
-    }
-
     private void validateInsert(final List<InsertAuthor> insert)
     {
         final List<InsertAuthorBookDto> insertBooks = insert.stream()
@@ -169,59 +219,9 @@ public class AuthorRepository extends ClusterLockScope
             {
                 if (!this.genres.contains(genre))
                 {
-                    throw new InvalidGenreException(genre);
+                    throw new MissingGenreException(genre);
                 }
             }
         }
-    }
-
-    /**
-     * Updates all the fields of the author in the storage with the specified author
-     * matching the id.
-     * 
-     * @param author the author containing all the updated fields and the same id as
-     *               the author in the storage to update
-     * @return <code>true</code> if the author was found and updated
-     */
-    public void update(final UUID id, final UpdateAuthor update)
-    {
-        this.write(() ->
-        {
-            final Author author = this.authors.query(GigaMapAuthorIndices.ID.is(id))
-                .findFirst()
-                .orElseThrow(() -> new InvalidAuthorIdException(id));
-            this.authors.replace(author, new Author(id, update.name(), update.about(), author.books()));
-            this.authors.store();
-        });
-    }
-
-    public void delete(final Iterable<UUID> ids)
-    {
-        this.write(() ->
-        {
-            final var cachedAuthors = new ArrayList<Author>();
-            for (final UUID id : ids)
-            {
-                // ensure authors exist
-                cachedAuthors.add(
-                    this.authors.query(GigaMapAuthorIndices.ID.is(id))
-                        .findFirst()
-                        .orElseThrow(() -> new InvalidAuthorIdException(id))
-                );
-            }
-            if (!cachedAuthors.isEmpty())
-            {
-                for (final var author : cachedAuthors)
-                {
-                    for (final var book : author.books().get())
-                    {
-                        this.books.remove(book);
-                    }
-                    this.authors.remove(author);
-                }
-                this.books.store();
-                this.authors.store();
-            }
-        });
     }
 }

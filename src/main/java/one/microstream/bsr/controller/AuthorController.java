@@ -21,7 +21,7 @@ import one.microstream.bsr.dto.GetAuthorById;
 import one.microstream.bsr.dto.InsertAuthor;
 import one.microstream.bsr.dto.SearchAuthorByName;
 import one.microstream.bsr.dto.UpdateAuthor;
-import one.microstream.bsr.exception.InvalidAuthorIdException;
+import one.microstream.bsr.exception.MissingAuthorException;
 import one.microstream.bsr.repository.AuthorRepository;
 
 @Controller("/author")
@@ -47,27 +47,27 @@ public class AuthorController
     }
 
     @Delete("/{id}")
-    public void delete(@NonNull @PathVariable final UUID id) throws InvalidAuthorIdException
+    public void delete(@NonNull @PathVariable final UUID id) throws MissingAuthorException
     {
         this.authors.delete(Arrays.asList(id));
     }
 
     @Delete("/batch")
     public void deleteBatch(@NonNull @Format("csv") @QueryValue final Iterable<@NonNull UUID> ids)
-        throws InvalidAuthorIdException
+        throws MissingAuthorException
     {
         this.authors.delete(ids);
-    }
-
-    @Get("/name")
-    public List<SearchAuthorByName> searchByName(@NonNull @NotBlank @QueryValue final String search)
-    {
-        return this.authors.searchByName(search);
     }
 
     @Get("/id/{id}")
     public GetAuthorById getById(@NonNull @PathVariable final UUID id)
     {
         return this.authors.getById(id).orElse(null);
+    }
+
+    @Get("/name")
+    public List<SearchAuthorByName> searchByName(@NonNull @NotBlank @QueryValue final String search)
+    {
+        return this.authors.searchByName(search);
     }
 }

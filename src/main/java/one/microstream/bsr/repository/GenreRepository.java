@@ -29,16 +29,6 @@ public class GenreRepository extends ClusterLockScope
     }
 
     /**
-     * List all genres contained in the storage in an unmodifiable {@link Set}.
-     * 
-     * @return an unmodifiable {@link Set} containing all genres
-     */
-    public Set<String> list()
-    {
-        return Collections.unmodifiableSet(this.read(() -> this.genres));
-    }
-
-    /**
      * Inserts the {@link Genre} into the storage.
      * 
      * @param genre the genre to insert
@@ -55,6 +45,16 @@ public class GenreRepository extends ClusterLockScope
             }
             return modified;
         });
+    }
+
+    /**
+     * List all genres contained in the storage in an unmodifiable {@link Set}.
+     * 
+     * @return an unmodifiable {@link Set} containing all genres
+     */
+    public Set<String> list()
+    {
+        return Collections.unmodifiableSet(this.read(() -> this.genres));
     }
 
     /**

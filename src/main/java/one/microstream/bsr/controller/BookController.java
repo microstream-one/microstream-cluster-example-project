@@ -28,8 +28,8 @@ import one.microstream.bsr.dto.SearchBookByAuthor;
 import one.microstream.bsr.dto.SearchBookByGenre;
 import one.microstream.bsr.dto.SearchBookByTitle;
 import one.microstream.bsr.dto.UpdateBook;
-import one.microstream.bsr.exception.InvalidAuthorIdException;
-import one.microstream.bsr.exception.InvalidGenreException;
+import one.microstream.bsr.exception.MissingAuthorException;
+import one.microstream.bsr.exception.MissingGenreException;
 import one.microstream.bsr.repository.BookRepository;
 
 @Controller("/book")
@@ -44,7 +44,7 @@ public class BookController
 
     @Post
     public List<GetBookById> insert(@NonNull @NotEmpty @Body final List<@NonNull @Valid InsertBook> insert)
-        throws InvalidAuthorIdException
+        throws MissingAuthorException
     {
         return this.books.insert(insert);
     }
@@ -63,13 +63,25 @@ public class BookController
 
     @Delete("/batch")
     public void deleteBatch(@NonNull @Format("csv") @QueryValue final List<@NonNull UUID> ids)
-        throws InvalidAuthorIdException
+        throws MissingAuthorException
     {
         this.books.delete(ids);
     }
 
+    @Get("/id/{id}")
+    public GetBookById getById(@NonNull @PathVariable final UUID id)
+    {
+        return this.books.getById(id).orElse(null);
+    }
+
+    @Get("/isbn/{isbn}")
+    public GetBookById getByIsbn(@NonNull @NotBlank @PathVariable final String isbn)
+    {
+        return this.books.getByISBN(isbn).orElse(null);
+    }
+
     @Get("/author/{id}")
-    public List<SearchBookByAuthor> searchByAuthor(@NonNull @PathVariable final UUID id) throws InvalidAuthorIdException
+    public List<SearchBookByAuthor> searchByAuthor(@NonNull @PathVariable final UUID id) throws MissingAuthorException
     {
         return this.books.searchByAuthor(id);
     }
@@ -83,7 +95,7 @@ public class BookController
     @Get("/genre")
     public List<SearchBookByGenre> searchByGenre(
         @NonNull @NotBlank @QueryValue final String genres
-    ) throws InvalidGenreException,
+    ) throws MissingGenreException,
         HttpStatusException
     {
         // @Format("csv") doesn't work for single values
@@ -91,17 +103,5 @@ public class BookController
             .filter(s -> !s.isBlank())
             .collect(Collectors.toUnmodifiableSet());
         return this.books.searchByGenre(genresSet);
-    }
-
-    @Get("/isbn/{isbn}")
-    public GetBookById getByIsbn(@NonNull @NotBlank @PathVariable final String isbn)
-    {
-        return this.books.getByISBN(isbn).orElse(null);
-    }
-
-    @Get("/id/{id}")
-    public GetBookById getById(@NonNull @PathVariable final UUID id)
-    {
-        return this.books.getById(id).orElse(null);
     }
 }
