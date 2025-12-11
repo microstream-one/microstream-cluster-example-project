@@ -101,7 +101,7 @@ public class BookController
         description = "One of the books could not be found."
     )
     @Delete("/batch")
-    public void deleteBatch(@NonNull @Format("csv") @QueryValue final List<@NonNull UUID> ids)
+    public void deleteBatch(@NonNull @NotEmpty @Format("csv") @QueryValue final List<@NonNull UUID> ids)
     {
         this.books.delete(ids);
     }
@@ -164,7 +164,7 @@ public class BookController
         @NonNull @NotBlank @QueryValue final String genres
     )
     {
-        // @Format("csv") doesn't work for single values
+        // @Format("csv") doesn't seem to work for single values so we split ourselves
         final Set<String> genresSet = Streams.of(genres.split(","))
             .filter(s -> !s.isBlank())
             .collect(Collectors.toUnmodifiableSet());

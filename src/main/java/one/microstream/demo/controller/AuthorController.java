@@ -101,7 +101,7 @@ public class AuthorController
         description = "One of the authors could not be found."
     )
     @Delete("/batch")
-    public void deleteBatch(@NonNull @Format("csv") @QueryValue final Iterable<@NonNull UUID> ids)
+    public void deleteBatch(@NonNull @NotEmpty @Format("csv") @QueryValue final List<@NonNull UUID> ids)
         throws MissingAuthorException
     {
         this.authors.delete(ids);
