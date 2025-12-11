@@ -183,15 +183,15 @@
 				<groupId>io.micronaut.maven</groupId>
 				<artifactId>micronaut-maven-plugin</artifactId>
 				<configuration>
-					<jvmArguments>--add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-modules jdk.incubator.vector</jvmArguments>
+					<jvmArguments>--add-exports java.base/jdk.internal.misc=ALL-UNNAMED</jvmArguments>
 				</configuration>
 			</plugin>
-			
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
 			</plugin>
-			
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
