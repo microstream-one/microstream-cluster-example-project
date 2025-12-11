@@ -11,4 +11,9 @@ public class MissingBookException extends HttpStatusException
     {
         super(HttpStatus.NOT_FOUND, "Could not find book with id " + bookId);
     }
+
+    public MissingBookException(final String isbn)
+    {
+        super(HttpStatus.NOT_FOUND, "Could not find book with isbn " + isbn);
+    }
 }

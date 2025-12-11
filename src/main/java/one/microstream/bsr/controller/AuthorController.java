@@ -54,7 +54,6 @@ public class AuthorController
 
     @Delete("/batch")
     public void deleteBatch(@NonNull @Format("csv") @QueryValue final Iterable<@NonNull UUID> ids)
-        throws MissingAuthorException
     {
         this.authors.delete(ids);
     }
@@ -62,7 +61,7 @@ public class AuthorController
     @Get("/id/{id}")
     public GetAuthorById getById(@NonNull @PathVariable final UUID id)
     {
-        return this.authors.getById(id).orElse(null);
+        return this.authors.getById(id);
     }
 
     @Get("/name")

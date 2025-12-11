@@ -34,8 +34,8 @@ public class GenreController
     }
 
     @Delete("/{genre}")
-    public boolean delete(@NonNull @NotBlank @PathVariable final String genre)
+    public void delete(@NonNull @NotBlank @PathVariable final String genre)
     {
-        return this.genres.delete(genre);
+        this.genres.delete(genre);
     }
 }

@@ -10,6 +10,7 @@ import org.eclipse.store.storage.types.StorageManager;
 import io.micronaut.eclipsestore.RootProvider;
 import jakarta.inject.Singleton;
 import one.microstream.bsr.domain.DataRoot;
+import one.microstream.bsr.exception.MissingGenreException;
 
 @Singleton
 public class GenreRepository extends ClusterLockScope
@@ -34,7 +35,7 @@ public class GenreRepository extends ClusterLockScope
      * @param genre the genre to insert
      * @return <code>true</code> if the genre did not already exist in the storage
      */
-    public boolean insert(final String genre) throws NullPointerException
+    public boolean insert(final String genre)
     {
         return this.write(() ->
         {
@@ -54,7 +55,7 @@ public class GenreRepository extends ClusterLockScope
      */
     public Set<String> list()
     {
-        return Collections.unmodifiableSet(this.read(() -> this.genres));
+        return this.read(() -> Collections.unmodifiableSet(this.genres));
     }
 
     /**
@@ -63,16 +64,16 @@ public class GenreRepository extends ClusterLockScope
      * @param genre the genre to delete
      * @return <code>true</code> if the storage contained the genre
      */
-    public boolean delete(final String genre) throws NullPointerException
+    public void delete(final String genre) throws MissingGenreException
     {
-        return this.write(() ->
+        this.write(() ->
         {
             final boolean modified = this.genres.remove(genre);
-            if (modified)
+            if (!modified)
             {
-                this.storageManager.store(this.genres);
+                throw new MissingGenreException(genre);
             }
-            return modified;
+            this.storageManager.store(this.genres);
         });
     }
 }

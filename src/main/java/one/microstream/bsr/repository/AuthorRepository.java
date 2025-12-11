@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -23,9 +22,9 @@ import one.microstream.bsr.dto.InsertAuthor;
 import one.microstream.bsr.dto.InsertAuthor.InsertAuthorBookDto;
 import one.microstream.bsr.dto.SearchAuthorByName;
 import one.microstream.bsr.dto.UpdateAuthor;
+import one.microstream.bsr.exception.InvalidIsbnException;
 import one.microstream.bsr.exception.MissingAuthorException;
 import one.microstream.bsr.exception.MissingGenreException;
-import one.microstream.bsr.exception.IsbnAlreadyExistsException;
 import one.microstream.bsr.gigamap.GigaMapAuthorIndices;
 import one.microstream.bsr.gigamap.GigaMapBookIndices;
 
@@ -50,16 +49,18 @@ public class AuthorRepository extends ClusterLockScope
         this.genres = root.genres();
     }
 
-    public List<GetAuthorById> insert(final List<InsertAuthor> insert) throws IsbnAlreadyExistsException
+    public List<GetAuthorById> insert(final List<InsertAuthor> insert)
+        throws InvalidIsbnException,
+        MissingGenreException
     {
         final var returnDtos = new ArrayList<GetAuthorById>(insert.size());
-    
+
         this.write(() ->
         {
             this.validateInsert(insert);
-    
+
             boolean modifiedBooks = false;
-    
+
             for (final var insertAuthor : insert)
             {
                 final var author = new Author(
@@ -69,7 +70,7 @@ public class AuthorRepository extends ClusterLockScope
                     Lazy.Reference(new HashSet<>())
                 );
                 returnDtos.add(GetAuthorById.from(author));
-    
+
                 List<Book> authorBooks = null;
                 if (insertAuthor.books() != null)
                 {
@@ -90,27 +91,27 @@ public class AuthorRepository extends ClusterLockScope
                         .toList();
                     author.books().get().addAll(authorBooks);
                 }
-    
+
                 this.authors.add(author);
-    
+
                 if (authorBooks != null)
                 {
                     this.books.addAll(authorBooks);
                     modifiedBooks = true;
                 }
             }
-    
+
             if (!insert.isEmpty())
             {
                 this.authors.store();
-    
+
                 if (modifiedBooks)
                 {
                     this.books.store();
                 }
             }
         });
-    
+
         return Collections.unmodifiableList(returnDtos);
     }
 
@@ -122,7 +123,7 @@ public class AuthorRepository extends ClusterLockScope
      *               the author in the storage to update
      * @return <code>true</code> if the author was found and updated
      */
-    public void update(final UUID id, final UpdateAuthor update)
+    public void update(final UUID id, final UpdateAuthor update) throws MissingAuthorException
     {
         this.write(() ->
         {
@@ -134,7 +135,7 @@ public class AuthorRepository extends ClusterLockScope
         });
     }
 
-    public void delete(final Iterable<UUID> ids)
+    public void delete(final Iterable<UUID> ids) throws MissingAuthorException
     {
         this.write(() ->
         {
@@ -164,9 +165,14 @@ public class AuthorRepository extends ClusterLockScope
         });
     }
 
-    public Optional<GetAuthorById> getById(final UUID id)
+    public GetAuthorById getById(final UUID id) throws MissingAuthorException
     {
-        return this.read(() -> this.authors.query(GigaMapAuthorIndices.ID.is(id)).findFirst()).map(GetAuthorById::from);
+        return this.read(
+            () -> this.authors.query(GigaMapAuthorIndices.ID.is(id))
+                .findFirst()
+                .map(GetAuthorById::from)
+                .orElseThrow(() -> new MissingAuthorException(id))
+        );
     }
 
     /**
@@ -193,7 +199,7 @@ public class AuthorRepository extends ClusterLockScope
         });
     }
 
-    private void validateInsert(final List<InsertAuthor> insert)
+    private void validateInsert(final List<InsertAuthor> insert) throws InvalidIsbnException, MissingGenreException
     {
         final List<InsertAuthorBookDto> insertBooks = insert.stream()
             .filter(a -> a.books() != null)
@@ -211,7 +217,7 @@ public class AuthorRepository extends ClusterLockScope
                         .isPresent()
             )
             {
-                throw new IsbnAlreadyExistsException(isbn);
+                throw new InvalidIsbnException(isbn);
             }
 
             // check if genres exist
