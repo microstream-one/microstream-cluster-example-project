@@ -12,6 +12,11 @@ import jakarta.inject.Singleton;
 import one.microstream.bsr.domain.DataRoot;
 import one.microstream.bsr.exception.MissingGenreException;
 
+/**
+ * Repository for finding and modifying genres. All methods hold a cluster-wide
+ * read or write lock to ensure consistency with background threads modifying
+ * data received from message queues.
+ */
 @Singleton
 public class GenreRepository extends ClusterLockScope
 {
@@ -30,10 +35,11 @@ public class GenreRepository extends ClusterLockScope
     }
 
     /**
-     * Inserts the {@link Genre} into the storage.
+     * Adds the specified genre to the genre set and stores the set.
      * 
      * @param genre the genre to insert
-     * @return <code>true</code> if the genre did not already exist in the storage
+     * @return <code>true</code> if the genre set has been modified
+     * @see Set#add(Object)
      */
     public boolean insert(final String genre)
     {
@@ -49,7 +55,7 @@ public class GenreRepository extends ClusterLockScope
     }
 
     /**
-     * List all genres contained in the storage in an unmodifiable {@link Set}.
+     * Lists all genres contained in the genre set.
      * 
      * @return an unmodifiable {@link Set} containing all genres
      */
@@ -59,10 +65,10 @@ public class GenreRepository extends ClusterLockScope
     }
 
     /**
-     * Deletes the genre from the storage.
+     * Removes the specified genre from the genre set and stores the set.
      * 
-     * @param genre the genre to delete
-     * @return <code>true</code> if the storage contained the genre
+     * @param genre the genre to remove
+     * @throws MissingGenreException if the specified genre could not be found
      */
     public void delete(final String genre) throws MissingGenreException
     {

@@ -22,12 +22,22 @@ import one.microstream.bsr.dto.InsertAuthor;
 import one.microstream.bsr.dto.InsertAuthor.InsertAuthorBookDto;
 import one.microstream.bsr.dto.SearchAuthorByName;
 import one.microstream.bsr.dto.UpdateAuthor;
+import one.microstream.bsr.exception.InvalidGenreException;
 import one.microstream.bsr.exception.InvalidIsbnException;
 import one.microstream.bsr.exception.MissingAuthorException;
 import one.microstream.bsr.exception.MissingGenreException;
 import one.microstream.bsr.gigamap.GigaMapAuthorIndices;
 import one.microstream.bsr.gigamap.GigaMapBookIndices;
 
+/**
+ * Repository for finding and modifying authors. All methods hold a cluster-wide
+ * read or write lock to ensure consistency with background threads modifying
+ * data received from message queues.
+ * 
+ * <p>
+ * Note: All results returned from search queries are limited to
+ * {@link AuthorRepository#DEFAULT_PAGE_SIZE}
+ */
 @Singleton
 public class AuthorRepository extends ClusterLockScope
 {
@@ -49,6 +59,15 @@ public class AuthorRepository extends ClusterLockScope
         this.genres = root.genres();
     }
 
+    /**
+     * Adds the specified authors to the authors {@link GigaMap} and stores it.
+     * 
+     * @param insert the authors to add
+     * @return a read-only list of the added authors
+     * @throws InvalidIsbnException  if a duplicate ISBN was found
+     * @throws InvalidGenreException if a genre could not be found from the
+     *                               specified books
+     */
     public List<GetAuthorById> insert(final List<InsertAuthor> insert)
         throws InvalidIsbnException,
         MissingGenreException
@@ -116,12 +135,13 @@ public class AuthorRepository extends ClusterLockScope
     }
 
     /**
-     * Updates all the fields of the author in the storage with the specified author
-     * matching the id.
+     * Updates the author with the specified values by replacing it and stores the
+     * authors {@link GigaMap}.
      * 
-     * @param author the author containing all the updated fields and the same id as
-     *               the author in the storage to update
-     * @return <code>true</code> if the author was found and updated
+     * @param id     the ID of the author to update
+     * @param update the new values for the author
+     * @throws MissingAuthorException if no author could be found for the specified
+     *                                ID
      */
     public void update(final UUID id, final UpdateAuthor update) throws MissingAuthorException
     {
@@ -135,6 +155,14 @@ public class AuthorRepository extends ClusterLockScope
         });
     }
 
+    /**
+     * Removes the books with the specified IDs from the books {@link GigaMap} and
+     * stores it.
+     * 
+     * @param ids the IDs of the books to remove
+     * @throws MissingAuthorException if an author could not be found for one of the
+     *                                specified IDs
+     */
     public void delete(final Iterable<UUID> ids) throws MissingAuthorException
     {
         this.write(() ->
@@ -165,6 +193,13 @@ public class AuthorRepository extends ClusterLockScope
         });
     }
 
+    /**
+     * Returns an author matching the specified ID.
+     * 
+     * @param id the ID of the author to return
+     * @return the author with matching ID
+     * @throws MissingAuthorException if no author could be found with matching ID
+     */
     public GetAuthorById getById(final UUID id) throws MissingAuthorException
     {
         return this.read(
@@ -176,10 +211,11 @@ public class AuthorRepository extends ClusterLockScope
     }
 
     /**
+     * Queries the name index of the author {@link GigaMap} for authors with names
+     * containing <code>containsNameSearch</code> ignoring case.
      * 
-     * @param containsNameSearch
-     * @return
-     * @see String#contains(CharSequence)
+     * @param containsNameSearch the contains search text for the query
+     * @return a read-only list of all authors matching the query
      */
     public List<SearchAuthorByName> searchByName(final String containsNameSearch)
     {

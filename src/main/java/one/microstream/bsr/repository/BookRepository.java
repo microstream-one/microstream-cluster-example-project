@@ -40,6 +40,15 @@ import one.microstream.bsr.gigamap.GigaMapAuthorIndices;
 import one.microstream.bsr.gigamap.GigaMapBookIndices;
 import one.microstream.bsr.lucene.BookDocumentPopulator;
 
+/**
+ * Repository for finding and modifying books. All methods hold a cluster-wide
+ * read or write lock to ensure consistency with background threads modifying
+ * data received from message queues.
+ * 
+ * <p>
+ * Note: All results returned from search queries are limited to
+ * {@link BookRepository#DEFAULT_PAGE_SIZE}
+ */
 @Singleton
 public class BookRepository extends ClusterLockScope
 {
@@ -67,6 +76,17 @@ public class BookRepository extends ClusterLockScope
         this.storageManager = storageManager;
     }
 
+    /**
+     * Adds the specified books to the books {@link GigaMap} and stores it.
+     * 
+     * @param insert the books to add
+     * @return a read-only list of the added books
+     * @throws InvalidAuthorException if an author could not be found from the
+     *                                specified books
+     * @throws InvalidIsbnException   if a duplicate ISBN was found
+     * @throws InvalidGenreException  if a genre could not be found from the
+     *                                specified books
+     */
     public List<GetBookById> insert(final List<InsertBook> insert)
         throws InvalidAuthorException,
         InvalidIsbnException,
@@ -128,12 +148,12 @@ public class BookRepository extends ClusterLockScope
     }
 
     /**
-     * Updates all the fields of the book in the storage with the specified book
-     * matching the id.
+     * Updates the book with the specified values by replacing it and stores the
+     * books {@link GigaMap}.
      * 
-     * @param book the book containing all the updated fields and the same id as the
-     *             book in the storage to update
-     * @return <code>true</code> if the book was found and updated
+     * @param id     the ID of the book to update
+     * @param update the new values for the book
+     * @throws MissingBookException if no book could be found for the specified ID
      */
     public void update(final UUID id, final UpdateBook update) throws MissingBookException
     {
@@ -160,7 +180,12 @@ public class BookRepository extends ClusterLockScope
     }
 
     /**
-     * @return <code>true</code> if the book has been removed from the storage
+     * Removes the books with the specified IDs from the books {@link GigaMap} and
+     * stores it.
+     * 
+     * @param ids the IDs of the books to remove
+     * @throws MissingBookException if a book with the specified ID could not be
+     *                              found
      */
     public void delete(final Iterable<UUID> ids) throws MissingBookException
     {
@@ -194,6 +219,13 @@ public class BookRepository extends ClusterLockScope
         });
     }
 
+    /**
+     * Returns a book matching the specified ID.
+     * 
+     * @param id the ID of the book to return
+     * @return the book with matching ID
+     * @throws MissingBookException if the book could not be found
+     */
     public GetBookById getById(final UUID id) throws MissingBookException
     {
         return this.read(
@@ -204,6 +236,13 @@ public class BookRepository extends ClusterLockScope
             .orElseThrow(() -> new MissingBookException(id));
     }
 
+    /**
+     * Returns a book matching the specified ISBN.
+     * 
+     * @param isbn the ISBN of the book to return
+     * @return the book with matching ISBN
+     * @throws MissingBookException if the book could not be found
+     */
     public GetBookById getByISBN(final String isbn) throws MissingBookException
     {
         return this.read(
@@ -214,6 +253,14 @@ public class BookRepository extends ClusterLockScope
             .orElseThrow(() -> new MissingBookException(isbn));
     }
 
+    /**
+     * Queries the ID index of the author {@link GigaMap} for the specified ID and
+     * returns a list of all books from the author.
+     * 
+     * @param id the ID of the author
+     * @return a read-only list of all books from the author
+     * @throws MissingAuthorException if the author could not be found
+     */
     public List<SearchBookByAuthor> searchByAuthor(final UUID id) throws MissingAuthorException
     {
         return this.read(
@@ -223,20 +270,28 @@ public class BookRepository extends ClusterLockScope
                 .books()
                 .get()
                 .stream()
+                .limit(DEFAULT_PAGE_SIZE)
                 .map(SearchBookByAuthor::from)
                 .toList()
         );
     }
 
     /**
-     * Searches books by title using a {@link WildcardQuery}
+     * Queries the title index of the books {@link GigaMap} for the specified
+     * <code>titleWildcardSearch</code> with a <code>"title:*search*"</code>
+     * wildcard query.
+     * 
+     * @param titleWildcardSearch the wildcard search text the title field will be
+     *                            searched with
+     * @return a read-only list of all found books for the specified query
+     * @see WildcardQuery
      */
     public List<SearchBookByTitle> searchByTitle(final String titleWildcardSearch)
     {
+        final String fullWildcardSearch = "*%s*".formatted(titleWildcardSearch);
         return this.read(
             () -> this.luceneIndex.query(
-                "%s:*%s*".formatted(BookDocumentPopulator.TITLE_FIELD, titleWildcardSearch),
-                DEFAULT_PAGE_SIZE
+                new WildcardQuery(new Term(BookDocumentPopulator.TITLE_FIELD, fullWildcardSearch))
             )
         )
             .stream()
@@ -244,6 +299,15 @@ public class BookRepository extends ClusterLockScope
             .toList();
     }
 
+    /**
+     * Searches the books {@link LuceneIndex} for the specified genres with a
+     * {@link BooleanQuery} containing all specified genres as a must occur
+     * {@link TermQuery} meaning all books returned must have the specified genres
+     * as a subset.
+     * 
+     * @param genres the genres which will be searched for
+     * @return a list of all found books for the specified set of genres
+     */
     public List<SearchBookByGenre> searchByGenre(final Set<String> genres)
     {
         final var storedBooks = this.read(() ->
@@ -263,7 +327,7 @@ public class BookRepository extends ClusterLockScope
     {
         for (final var book : insert)
         {
-            // check for isbn uniqueness in the insert and the storage
+            // check for ISBN uniqueness in the insert and the storage
             final String isbn = book.isbn();
             if (
                 insert.stream().map(b -> b.isbn()).filter(isbn::equals).count() > 1
