@@ -5,8 +5,13 @@ import io.micronaut.http.exceptions.HttpStatusException;
 
 public class InvalidGenreException extends HttpStatusException
 {
-    public InvalidGenreException(final String genre)
+    public static InvalidGenreException doesNotExist(final String genre)
     {
-        super(HttpStatus.BAD_REQUEST, "Genre '%s' does not exist".formatted(genre));
+        return new InvalidGenreException("Genre '%s' does not exist".formatted(genre));
+    }
+
+    public InvalidGenreException(final String message)
+    {
+        super(HttpStatus.BAD_REQUEST, message);
     }
 }

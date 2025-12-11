@@ -10,6 +10,7 @@ import org.eclipse.store.storage.types.StorageManager;
 import io.micronaut.eclipsestore.RootProvider;
 import jakarta.inject.Singleton;
 import one.microstream.demo.domain.DataRoot;
+import one.microstream.demo.exception.InvalidGenreException;
 import one.microstream.demo.exception.MissingGenreException;
 
 /**
@@ -38,19 +39,19 @@ public class GenreRepository extends ClusterLockScope
      * Adds the specified genre to the genre set and stores the set.
      * 
      * @param genre the genre to insert
-     * @return <code>true</code> if the genre set has been modified
+     * @throws InvalidGenreException if the specified genre already exists
      * @see Set#add(Object)
      */
-    public boolean insert(final String genre)
+    public void insert(final String genre) throws InvalidGenreException
     {
-        return this.write(() ->
+        this.write(() ->
         {
             final boolean modified = this.genres.add(genre);
-            if (modified)
+            if (!modified)
             {
-                this.storageManager.store(this.genres);
+                throw new InvalidGenreException("Genre '%s' already exists.".formatted(genre));
             }
-            return modified;
+            this.storageManager.store(this.genres);
         });
     }
 

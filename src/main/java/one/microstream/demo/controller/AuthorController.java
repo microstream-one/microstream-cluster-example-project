@@ -63,7 +63,7 @@ public class AuthorController
     }
 
     @Operation(summary = "Update an existing author")
-    @Parameter(name = "id", description = "The id of the author to update.")
+    @Parameter(name = "id", description = "The ID of the author to update.")
     @RequestBody(description = "The updated fields of the author.")
     @ApiResponse(description = "The author has been updated.")
     @ApiResponse(
@@ -81,7 +81,7 @@ public class AuthorController
     }
 
     @Operation(summary = "Delete an author")
-    @Parameter(name = "id", description = "The id of the author to delete.")
+    @Parameter(name = "id", description = "The ID of the author to delete.")
     @ApiResponse(description = "The author has been deleted.")
     @ApiResponse(
         responseCode = "404",
@@ -94,7 +94,7 @@ public class AuthorController
     }
 
     @Operation(summary = "Delete multiple authors")
-    @Parameter(name = "ids", description = "The ids of the authors to delete.")
+    @Parameter(name = "ids", description = "The IDs of the authors to delete.")
     @ApiResponse(description = "The authors have been deleted.")
     @ApiResponse(
         responseCode = "404",
@@ -107,9 +107,9 @@ public class AuthorController
         this.authors.delete(ids);
     }
 
-    @Operation(summary = "Get an author by id")
-    @Parameter(name = "id", description = "The id of the author to get.")
-    @ApiResponse(description = "An author with matching id has been found. Returns the author with matching id.")
+    @Operation(summary = "Get an author by ID")
+    @Parameter(name = "id", description = "The ID of the author to get.")
+    @ApiResponse(description = "An author with matching ID has been found. Returns the author with matching ID.")
     @ApiResponse(
         responseCode = "404",
         description = "The author could not be found."
@@ -120,7 +120,7 @@ public class AuthorController
         return this.authors.getById(id);
     }
 
-    @Operation(summary = "Search for an author by name")
+    @Operation(summary = "Search for authors by name")
     @Parameter(
         name = "search",
         description = "The search text to search through the author names. This uses a 'contains'-search ignoring case."

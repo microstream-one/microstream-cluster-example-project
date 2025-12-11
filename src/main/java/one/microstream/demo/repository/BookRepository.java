@@ -344,7 +344,7 @@ public class BookRepository extends ClusterLockScope
             {
                 if (!this.genres.contains(genre))
                 {
-                    throw new InvalidGenreException(genre);
+                    throw InvalidGenreException.doesNotExist(genre);
                 }
             }
         }
