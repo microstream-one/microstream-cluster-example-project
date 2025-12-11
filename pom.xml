@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>one.microstream</groupId>
-	<artifactId>books-rest-server</artifactId>
+	<artifactId>cluster-storage-demo</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<packaging>${packaging}</packaging>
 
@@ -24,7 +24,7 @@
 		<lucene.version>10.3.2</lucene.version>
 		<micronaut.aot.enabled>false</micronaut.aot.enabled>
 		<micronaut.runtime>netty</micronaut.runtime>
-		<exec.mainClass>one.microstream.bsr.Application</exec.mainClass>
+		<exec.mainClass>one.microstream.demo.Application</exec.mainClass>
 	</properties>
 
 	<repositories>
@@ -51,17 +51,6 @@
 	</dependencyManagement>
 
 	<dependencies>
-		<dependency>
-			<groupId>org.eclipse.store</groupId>
-			<artifactId>storage-embedded</artifactId>
-			<version>${eclipsestore.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.serializer</groupId>
-			<artifactId>persistence-binary</artifactId>
-			<version>${eclipsestore.version}</version>
-		</dependency>
-
 		<!-- GigaMap -->
 		<dependency>
 			<groupId>org.eclipse.store</groupId>
@@ -93,10 +82,44 @@
 			<version>1.17.2</version>
 		</dependency>
 
+		<!-- Eclipse Store -->
+		<dependency>
+			<groupId>io.micronaut.eclipsestore</groupId>
+			<artifactId>micronaut-eclipsestore</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.eclipse.serializer</groupId>
+					<artifactId>persistence-binary-jdk8</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.eclipse.serializer</groupId>
+					<artifactId>persistence-binary-jdk17</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>io.micronaut.eclipsestore</groupId>
+			<artifactId>micronaut-eclipsestore-annotations</artifactId>
+		</dependency>
+
 		<!-- Logging -->
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-slf4j2-impl</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-slf4j-impl</artifactId>
 			<scope>runtime</scope>
 		</dependency>
 
@@ -111,7 +134,7 @@
 		</dependency>
 		<dependency>
 			<groupId>io.micronaut.serde</groupId>
-			<artifactId>micronaut-serde-bson</artifactId>
+			<artifactId>micronaut-serde-jackson</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>io.micronaut.validation</groupId>
@@ -124,6 +147,11 @@
 		<dependency>
 			<groupId>jakarta.validation</groupId>
 			<artifactId>jakarta.validation-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.micronaut.openapi</groupId>
+			<artifactId>micronaut-openapi-annotations</artifactId>
+			<scope>provided</scope>
 		</dependency>
 
 		<!-- Micronaut Test -->
@@ -158,14 +186,18 @@
 					<jvmArguments>--add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-modules jdk.incubator.vector</jvmArguments>
 				</configuration>
 			</plugin>
+			
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
 			</plugin>
+			
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
+					<useIncrementalCompilation>false</useIncrementalCompilation>
+
 					<annotationProcessorPaths combine.children="append">
 						<path>
 							<groupId>io.micronaut</groupId>
@@ -176,6 +208,17 @@
 							<groupId>io.micronaut.eclipsestore</groupId>
 							<artifactId>micronaut-eclipsestore-annotations</artifactId>
 							<version>${micronaut.eclipsestore.version}</version>
+							<exclusions>
+								<exclusion>
+									<groupId>io.micronaut</groupId>
+									<artifactId>micronaut-inject</artifactId>
+								</exclusion>
+							</exclusions>
+						</path>
+						<path>
+							<groupId>io.micronaut.openapi</groupId>
+							<artifactId>micronaut-openapi</artifactId>
+							<version>${micronaut.openapi.version}</version>
 							<exclusions>
 								<exclusion>
 									<groupId>io.micronaut</groupId>
@@ -207,8 +250,8 @@
 						</path>
 					</annotationProcessorPaths>
 					<compilerArgs>
-						<arg>-Amicronaut.processing.group=one.microstream.bsr</arg>
-						<arg>-Amicronaut.processing.module=books-rest-server</arg>
+						<arg>-Amicronaut.processing.group=one.microstream.demo</arg>
+						<arg>-Amicronaut.processing.module=cluster-storage-demo</arg>
 					</compilerArgs>
 				</configuration>
 			</plugin>
