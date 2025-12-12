@@ -14,4 +14,4 @@ if [ -z "$1" ]; then
 fi
 
 url=${CLUSTER_URL:=http://localhost:8080}
-curl $url/author/id/$1
+curl "$url/author/id/$1"

@@ -1,9 +1,6 @@
 package one.microstream.demo.controller;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.stream.Streams;
@@ -90,7 +87,7 @@ public class BookController
     @Delete("/{id}")
     public void delete(@NonNull @PathVariable final UUID id)
     {
-        this.books.delete(Arrays.asList(id));
+        this.books.delete(Collections.singletonList(id));
     }
 
     @Operation(summary = "Delete multiple books")

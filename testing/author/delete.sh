@@ -15,4 +15,4 @@ fi
 
 url=${CLUSTER_URL:=http://localhost:8080}
 
-curl -X DELETE $url/author/$1
+curl -X DELETE "$url/author/$1"

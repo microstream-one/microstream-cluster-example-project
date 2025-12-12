@@ -50,11 +50,10 @@ public record Book(
         {
             return true;
         }
-        if (!(obj instanceof Book))
+        if (!(obj instanceof Book other))
         {
             return false;
         }
-        final Book other = (Book)obj;
         // use author id to avoid stack overflows
         return Objects.equals(this.author.id(), other.author.id()) && Objects.equals(
             this.description,

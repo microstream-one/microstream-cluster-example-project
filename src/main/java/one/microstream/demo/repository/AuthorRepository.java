@@ -19,7 +19,7 @@ import one.microstream.demo.domain.Book;
 import one.microstream.demo.domain.DataRoot;
 import one.microstream.demo.dto.GetAuthorById;
 import one.microstream.demo.dto.InsertAuthor;
-import one.microstream.demo.dto.InsertAuthor.InsertAuthorBookDto;
+import one.microstream.demo.dto.InsertAuthor.InsertAuthorBook;
 import one.microstream.demo.dto.SearchAuthorByName;
 import one.microstream.demo.dto.UpdateAuthor;
 import one.microstream.demo.exception.InvalidGenreException;
@@ -236,7 +236,7 @@ public class AuthorRepository extends ClusterLockScope
 
     private void validateInsert(final List<InsertAuthor> insert) throws InvalidIsbnException, InvalidGenreException
     {
-        final List<InsertAuthorBookDto> insertBooks = insert.stream()
+        final List<InsertAuthorBook> insertBooks = insert.stream()
             .filter(a -> a.books() != null)
             .flatMap(a -> a.books().stream())
             .toList();
@@ -246,7 +246,7 @@ public class AuthorRepository extends ClusterLockScope
             // check for isbn uniqueness in the insert and the storage
             final String isbn = book.isbn();
             if (
-                insertBooks.stream().map(b -> b.isbn()).filter(isbn::equals).count() > 1
+                insertBooks.stream().map(InsertAuthorBook::isbn).filter(isbn::equals).count() > 1
                     || this.books.query(GigaMapBookIndices.ISBN.is(isbn))
                         .findFirst()
                         .isPresent()

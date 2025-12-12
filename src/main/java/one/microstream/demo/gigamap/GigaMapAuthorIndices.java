@@ -24,7 +24,7 @@ public final class GigaMapAuthorIndices
         }
     };
 
-    public static final IndexerString<Author> NAME = new IndexerString.Abstract<Author>()
+    public static final IndexerString<Author> NAME = new IndexerString.Abstract<>()
     {
         @Override
         public String name()

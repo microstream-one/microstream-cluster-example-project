@@ -18,12 +18,12 @@ import jakarta.validation.constraints.Positive;
 public record InsertAuthor(
     @NonNull @NotBlank String name,
     @NonNull @NotBlank String about,
-    @Nullable List<@NonNull @Valid InsertAuthorBookDto> books
+    @Nullable List<@NonNull @Valid InsertAuthorBook> books
 )
 {
     @Serdeable
     @Introspected
-    public record InsertAuthorBookDto(
+    public record InsertAuthorBook(
         @NonNull @NotBlank String isbn,
         @NonNull @NotBlank String title,
         @NonNull @NotBlank String description,

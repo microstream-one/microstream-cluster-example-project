@@ -8,4 +8,4 @@
 # Example: export CLUSTER_URL=https://my-url.com
 
 url=${CLUSTER_URL:=http://localhost:8080}
-curl $url/genre
+curl "$url/genre"

@@ -14,4 +14,4 @@ if [ -z "$1" ]; then
 fi
 
 url=${CLUSTER_URL:=http://localhost:8080}
-curl -H "Content-Type:application/json" -d "$1" $url/author
+curl -H "Content-Type:application/json" -d "$1" "$url/author"

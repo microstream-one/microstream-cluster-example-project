@@ -1,6 +1,7 @@
 package one.microstream.demo.controller;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -90,7 +91,7 @@ public class AuthorController
     @Delete("/{id}")
     public void delete(@NonNull @PathVariable final UUID id) throws MissingAuthorException
     {
-        this.authors.delete(Arrays.asList(id));
+        this.authors.delete(Collections.singletonList(id));
     }
 
     @Operation(summary = "Delete multiple authors")

@@ -14,4 +14,4 @@ if [ -z "$1" ]; then
 fi
 
 url=${CLUSTER_URL:=http://localhost:8080}
-curl -X DELETE $url/genre/$1
+curl -X DELETE "$url/genre/$1"

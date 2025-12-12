@@ -301,7 +301,7 @@ public class BookRepository extends ClusterLockScope
 
     /**
      * Searches the books {@link LuceneIndex} for the specified genres with a
-     * {@link BooleanQuery} containing all specified genres as a must occur
+     * {@link BooleanQuery} containing all specified genres as a must-occur
      * {@link TermQuery} meaning all books returned must have the specified genres
      * as a subset.
      * 
@@ -330,7 +330,7 @@ public class BookRepository extends ClusterLockScope
             // check for ISBN uniqueness in the insert and the storage
             final String isbn = book.isbn();
             if (
-                insert.stream().map(b -> b.isbn()).filter(isbn::equals).count() > 1
+                insert.stream().map(InsertBook::isbn).filter(isbn::equals).count() > 1
                     || this.books.query(GigaMapBookIndices.ISBN.is(isbn))
                         .findFirst()
                         .isPresent()
